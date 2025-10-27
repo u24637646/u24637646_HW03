@@ -1,0 +1,71 @@
+﻿@model u24637646_HW03.ViewModels.StaffViewModel
+
+@{
+    ViewBag.Title = "Staff Details";
+}
+
+<h2>Staff Details</h2>
+
+<div>
+    <h4>Staff Information</h4>
+    <hr />
+    <dl class="dl-horizontal">
+
+        <dt>
+            @Html.DisplayName("First Name")
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.first_name)
+        </dd>
+
+        <dt>
+            @Html.DisplayName("Last Name")
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.last_name)
+        </dd>
+
+        <dt>
+            @Html.DisplayName("Email Address")
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.email)
+        </dd>
+
+        <dt>
+            @Html.DisplayName("Phone Number")
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.phone)
+        </dd>
+
+        <dt>
+            @Html.DisplayName("Active?")
+        </dt>
+        <dd>
+            @* Apply the Yes/No logic for the byte value *@
+            @(Model.active == 1 ? "Yes" : "No")
+        </dd>
+
+        <dt>
+            @Html.DisplayName("Store Name")
+        </dt>
+        <dd>
+            @* Uses the projected string property *@
+            @Html.DisplayFor(model => model.store_name)
+        </dd>
+
+        <dt>
+            @Html.DisplayName("Manager Name")
+        </dt>
+        <dd>
+            @* Uses the projected string property *@
+            @Html.DisplayFor(model => model.manager_name)
+        </dd>
+
+    </dl>
+</div>
+<p>
+    @Html.ActionLink("Edit", "Edit", new { id = Model.staff_id }) |
+    @Html.ActionLink("Back to List", "Index")
+</p>

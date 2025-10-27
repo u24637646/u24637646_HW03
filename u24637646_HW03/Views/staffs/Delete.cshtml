@@ -1,0 +1,80 @@
+﻿@model u24637646_HW03.ViewModels.StaffViewModel
+@{
+    ViewBag.Title = "Delete";
+}
+
+<h2>Delete Staff Member</h2>
+
+<h3>Are you absolutely sure you want to delete this staff member?</h3>
+<div>
+    <h4>Staff Details to be Deleted</h4>
+    <hr />
+    <dl class="dl-horizontal">
+
+        <dt>
+            @Html.DisplayName("First Name")
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.first_name)
+        </dd>
+
+        <dt>
+            @Html.DisplayName("Last Name")
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.last_name)
+        </dd>
+
+        <dt>
+            @Html.DisplayName("Email Address")
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.email)
+        </dd>
+
+        <dt>
+            @Html.DisplayName("Phone Number")
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.phone)
+        </dd>
+
+        <dt>
+            @Html.DisplayName("Active Status")
+        </dt>
+        <dd>
+            @* Apply the Yes/No logic for the byte value *@
+            @(Model.active == 1 ? "Yes" : "No")
+        </dd>
+
+        <dt>
+            @Html.DisplayName("Store Name")
+        </dt>
+        <dd>
+            @* Uses the projected string property *@
+            @Html.DisplayFor(model => model.store_name)
+        </dd>
+
+        <dt>
+            @Html.DisplayName("Manager Name")
+        </dt>
+        <dd>
+            @* Uses the projected string property *@
+            @Html.DisplayFor(model => model.manager_name)
+        </dd>
+
+    </dl>
+
+    @using (Html.BeginForm())
+    {
+        @Html.AntiForgeryToken()
+
+        @* We use the staff_id from the ViewModel for the POST action *@
+        @Html.HiddenFor(model => model.staff_id)
+
+        <div class="form-actions no-color">
+            <input type="submit" value="Delete" class="btn btn-danger" /> |
+            @Html.ActionLink("Cancel and Back to List", "Index")
+        </div>
+    }
+</div>
