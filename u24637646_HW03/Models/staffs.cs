@@ -30,7 +30,7 @@ namespace u24637646_HW03.Models
         public string email { get; set; }
         public string phone { get; set; }
 
-        [Range(0, 1, ErrorMessage = "Active status must be 0 (Inactive) or 1 (Active).")]
+        [Range(0, 1, ErrorMessage = "Active status must be 1 (Active) or 0 (Inactive).")]
         public byte active { get; set; }
         public int store_id { get; set; }
         public Nullable<int> manager_id { get; set; }
