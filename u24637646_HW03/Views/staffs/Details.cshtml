@@ -43,7 +43,6 @@
             @Html.DisplayName("Active?")
         </dt>
         <dd>
-            @* Apply the Yes/No logic for the byte value *@
             @(Model.active == 1 ? "Yes" : "No")
         </dd>
 
@@ -51,7 +50,6 @@
             @Html.DisplayName("Store Name")
         </dt>
         <dd>
-            @* Uses the projected string property *@
             @Html.DisplayFor(model => model.store_name)
         </dd>
 
@@ -59,7 +57,6 @@
             @Html.DisplayName("Manager Name")
         </dt>
         <dd>
-            @* Uses the projected string property *@
             @Html.DisplayFor(model => model.manager_name)
         </dd>
 
@@ -67,5 +64,5 @@
 </div>
 <p>
     @Html.ActionLink("Edit", "Edit", new { id = Model.staff_id }) |
-    @Html.ActionLink("Back to List", "Index")
+    @Html.ActionLink("Back", "Index", null, new { @class = "btn btn-default", @onclick = "history.back(); return false;" })
 </p>

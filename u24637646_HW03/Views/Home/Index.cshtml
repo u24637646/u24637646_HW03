@@ -1,33 +1,404 @@
-﻿@{
-    ViewBag.Title = "Home Page";
+﻿@model u24637646_HW03.ViewModels.HomeIndexViewModel
+
+@{
+    ViewBag.Title = "Home";
 }
 
-<main>
-    <section class="row" aria-labelledby="aspnetTitle">
-        <h1 id="title">ASP.NET</h1>
-        <p class="lead">ASP.NET is a free web framework for building great Web sites and Web applications using HTML, CSS and JavaScript.</p>
-        <p><a href="https://asp.net" class="btn btn-primary btn-md">Learn more &raquo;</a></p>
-    </section>
+<div class="text-center">
+    <h1>Bike Stores</h1>
+</div>
 
-    <div class="row">
-        <section class="col-md-4" aria-labelledby="gettingStartedTitle">
-            <h2 id="gettingStartedTitle">Getting started</h2>
-            <p>
-                ASP.NET MVC gives you a powerful, patterns-based way to build dynamic websites that
-                enables a clean separation of concerns and gives you full control over markup
-                for enjoyable, agile development.
-            </p>
-            <p><a class="btn btn-outline-dark" href="https://go.microsoft.com/fwlink/?LinkId=301865">Learn more &raquo;</a></p>
-        </section>
-        <section class="col-md-4" aria-labelledby="librariesTitle">
-            <h2 id="librariesTitle">Get more libraries</h2>
-            <p>NuGet is a free Visual Studio extension that makes it easy to add, remove, and update libraries and tools in Visual Studio projects.</p>
-            <p><a class="btn btn-outline-dark" href="https://go.microsoft.com/fwlink/?LinkId=301866">Learn more &raquo;</a></p>
-        </section>
-        <section class="col-md-4" aria-labelledby="hostingTitle">
-            <h2 id="hostingTitle">Web Hosting</h2>
-            <p>You can easily find a web hosting company that offers the right mix of features and price for your applications.</p>
-            <p><a class="btn btn-outline-dark" href="https://go.microsoft.com/fwlink/?LinkId=301867">Learn more &raquo;</a></p>
-        </section>
+<div class="row">
+
+    @* STAFF PANEL *@
+    <div class="col-md-4">
+        <div class="panel panel-success dashboard-panel">
+            <div class="panel-heading">
+                <h3 class="panel-title"><i class="glyphicon glyphicon-user"></i>Staff</h3>
+                @Html.ActionLink("Create", "Create", "staffs", null, new { @class = "btn btn-success btn-block" })
+            </div>
+            <div class="panel-body text-center" id="staff-panel-body">
+                @if (Model.StaffsList != null && Model.StaffsList.Any())
+                {
+                    <input type="hidden" id="staff-index" value="0" />
+
+                    <span id="staff-count" style="display:none;">@(Model.StaffsList.Count())</span>
+
+                    <script>
+                        var staffIdMap = staffIdMap || {};
+                        staffIdMap['staff'] = {};
+                    </script>
+
+                    for (int i = 0; i < Model.StaffsList.Count(); i++)
+                    {
+                        var staff = Model.StaffsList.ElementAt(i);
+
+                        <script>
+                            staffIdMap['staff'][@staff.staff_id] = @i;
+                        </script>
+
+                        <div class="detail-item staff-item" id="staff-@i" data-staff-id="@staff.staff_id" style="display: @(i == 0 ? "block" : "none");">
+                            <h4 class="text-success">@staff.staff_id. @staff.first_name @staff.last_name</h4>
+                            <p>Email: @staff.email</p>
+                            <p>Phone: @staff.phone</p>
+                            <p>Store: @staff.store_name</p>
+                            <p>Manager: @staff.manager_name</p>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-danger">No staff records found.</p>
+                }
+            </div>
+
+            @if (Model.StaffsList != null && Model.StaffsList.Any())
+            {
+                <div class="panel-footer staff-navigator text-center">
+
+                    <div class="id-jump-container">
+                        <div class="input-group input-group-sm mb-2 id-input-group">
+                            <input id="staff-id-jump"
+                                   type="number"
+                                   class="panel-nav form-control text-center"
+                                   min="1"
+                                   onchange="jumpToId('staff')"
+                                   onkeypress="if(event.keyCode == 13) { jumpToId('staff'); return false; }" />
+                            <p> /@(Model.StaffsList.Count())</p>
+                        </div>
+                    </div>
+
+                    <div class="btn-group btn-group-sm" role="group" style="margin-top: 5px;">
+                        <button type="button" class="btn btn-success" onclick="navigate('staff', -1)">
+                            <i class="glyphicon glyphicon-chevron-left"><</i>
+                        </button>
+
+                        @Html.ActionLink("View Details", "Details", "Staffs",
+                            new { id = Model.StaffsList.First().staff_id },
+                            new { @class = "btn btn-success", @id = "staff-details-link" })
+
+                        <button type="button" class="btn btn-success" onclick="navigate('staff', 1)">
+                            <i class="glyphicon glyphicon-chevron-right">></i>
+                        </button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="panel-footer">
+                    @Html.ActionLink("View All Staff", "Index", "staffs", null, new { @class = "btn btn-success btn-block" })
+                </div>
+            }
+        </div>
     </div>
-</main>
+
+    @* CUSTOMERS PANEL *@
+    <div class="col-md-4">
+        <div class="panel panel-info dashboard-panel">
+            <div class="panel-heading">
+                <h3 class="panel-title"><i class="glyphicon glyphicon-globe"></i> Customers</h3>
+                @Html.ActionLink("Create", "Create", "Customers", null, new { @class = "btn btn-info btn-block" })
+            </div>
+            <div class="panel-body text-center" id="customer-panel-body">
+                @if (Model.CustomersList != null && Model.CustomersList.Any())
+                {
+                    <input type="hidden" id="customer-index" value="0" />
+
+                    <span id="customer-count" style="display:none;">@(Model.CustomersList.Count())</span>
+
+                    <script>
+                        var staffIdMap = staffIdMap || {};
+                        staffIdMap['customer'] = {};
+                    </script>
+
+                    for (int i = 0; i < Model.CustomersList.Count(); i++)
+                    {
+                        var customer = Model.CustomersList.ElementAt(i);
+
+                        <script>
+                            staffIdMap['customer'][@customer.customer_id] = @i;
+                        </script>
+
+                        <div class="detail-item customer-item" id="customer-@i" data-customer-id="@customer.customer_id" style="display: @(i == 0 ? "block" : "none");">
+                            <h4 class="text-info">@customer.customer_id. @customer.first_name @customer.last_name</h4>
+                            <p>Email: @customer.email</p>
+                            <p>Phone: @customer.phone</p>
+                            <p>Location: @customer.city, @customer.state</p>
+                            <p>Street: @customer.street</p>
+                            <p>Zip: @customer.zip_code</p>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-danger">No customer records found.</p>
+                }
+            </div>
+
+            @if (Model.CustomersList != null && Model.CustomersList.Any())
+            {
+                <div class="panel-footer customer-navigator text-center">
+
+                  
+                    <div class="id-jump-container">
+                        <div class="input-group input-group-sm mb-2 id-input-group">
+                            <input id="customer-id-jump"
+                                   type="number"
+                                   class="panel-nav form-control text-center"
+                                   min="1"
+                                   onchange="jumpToId('customer')"
+                                   onkeypress="if(event.keyCode == 13) { jumpToId('customer'); return false; }" />
+                            <p> /@(Model.CustomersList.Count())</p>
+                        </div>
+                    </div>
+
+                    <div class="btn-group btn-group-sm" role="group" style="margin-top: 5px;">
+                        <button type="button" class="btn btn-info" onclick="navigate('customer', -1)">
+                            <i class="glyphicon glyphicon-chevron-left"><</i>
+                        </button>
+
+                        @Html.ActionLink("View Details", "Details", "Customers",
+                            new { id = Model.CustomersList.First().customer_id },
+                            new { @class = "btn btn-info", @id = "customer-details-link" })
+
+                        <button type="button" class="btn btn-info" onclick="navigate('customer', 1)">
+                            <i class="glyphicon glyphicon-chevron-right">></i>
+                        </button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="panel-footer">
+                    @Html.ActionLink("View All Customers", "Index", "Customers", null, new { @class = "btn btn-info btn-block" })
+                </div>
+            }
+        </div>
+    </div>
+
+    @* PRODUCTS PANEL *@
+    <div class="col-md-4">
+        <div class="panel panel-warning dashboard-panel">
+            <div class="panel-heading">
+                <h3 class="panel-title"><i class="glyphicon glyphicon-tag"></i> Products</h3>
+                @Html.ActionLink("Create", "Create", "Products", null, new { @class = "btn btn-warning btn-block" })
+            </div>
+            <div class="panel-body text-center" id="product-panel-body">
+                @if (Model.ProductsList != null && Model.ProductsList.Any())
+                {
+                    <input type="hidden" id="product-index" value="0" />
+
+                    <span id="product-count" style="display:none;">@(Model.ProductsList.Count())</span>
+
+                    <script>
+                        var staffIdMap = staffIdMap || {};
+                        staffIdMap['product'] = {};
+                    </script>
+
+                    for (int i = 0; i < Model.ProductsList.Count(); i++)
+                    {
+                        var product = Model.ProductsList.ElementAt(i);
+
+                        <script>
+                            staffIdMap['product'][@product.product_id] = @i;
+                        </script>
+
+                        <div class="detail-item product-item" id="product-@i" data-product-id="@product.product_id" style="display: @(i == 0 ? "block" : "none");">
+                            <h4 class="text-warning">@product.product_id. @product.product_name</h4>
+                            <p>Brand: @product.brand_name</p>
+                            <p>Category: @product.category_name</p>
+                            <p>Model Year: @product.model_year</p>
+                            <p>Price: @product.list_price.ToString("C")</p>
+                            <p>Total Stock: @product.TotalStock</p>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-danger">No product records found.</p>
+                }
+            </div>
+
+            @if (Model.ProductsList != null && Model.ProductsList.Any())
+            {
+                <div class="panel-footer product-navigator text-center">
+
+                  
+                    <div class="id-jump-container">
+                        <div class="input-group input-group-sm mb-2 id-input-group">
+                            <input id="product-id-jump"
+                                   type="number"
+                                   class="panel-nav form-control text-center"
+                                   min="1"
+                                   onchange="jumpToId('product')"
+                                   onkeypress="if(event.keyCode == 13) { jumpToId('product'); return false; }" />
+                            <p> /@(Model.ProductsList.Count())</p>
+                        </div>
+                    </div>
+
+                    <div class="btn-group btn-group-sm" role="group" style="margin-top: 5px;">
+                        <button type="button" class="btn btn-warning" onclick="navigate('product', -1)">
+                            <i class="glyphicon glyphicon-chevron-left"><</i>
+                        </button>
+
+                        @Html.ActionLink("View Details", "Details", "Products",
+                            new { id = Model.ProductsList.First().product_id },
+                            new { @class = "btn btn-warning", @id = "product-details-link" })
+
+                        <button type="button" class="btn btn-warning" onclick="navigate('product', 1)">
+                            <i class="glyphicon glyphicon-chevron-right">></i>
+                        </button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="panel-footer">
+                    @Html.ActionLink("View All Products", "Index", "Products", null, new { @class = "btn btn-warning btn-block" })
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        function navigate(type, direction) {
+            var indexInput = $('#' + type + '-index');
+            var currentIdx = parseInt(indexInput.val());
+            var totalCount = parseInt($('#' + type + '-count').text());
+            var lastIndex = totalCount - 1;
+
+            if (totalCount === 0) return;
+
+            var newIdx = currentIdx + direction;
+
+            // 1. Minimum Boundary Check: Stop navigation at the first item (index 0)
+            if (direction === -1 && currentIdx === 0) {
+                return;
+            }
+
+            // 2. Maximum Boundary Check (Wrapping): If newIdx exceeds the max index, wrap to 0.
+            if (newIdx > lastIndex) {
+                newIdx = 0;
+            }
+
+            // --- Navigation Execution ---
+
+            $('#' + type + '-' + currentIdx).fadeOut(100, function () {
+                var $newItem = $('#' + type + '-' + newIdx);
+                $newItem.fadeIn(200);
+
+                var dbId = $newItem.data(type + '-id');
+
+                // Update the input placeholder to show the current ID
+                $('#' + type + '-id-jump').attr('placeholder', dbId);
+                $('#' + type + '-id-jump').val(''); // Clear input field
+
+                // Update the ActionLink's href (for the 'View Details' button)
+                var $link = $('#' + type + '-details-link');
+                if ($link.length > 0) {
+                    var currentHref = $link.attr('href');
+                    if (/\/[0-9]+$/.test(currentHref)) {
+                        var newHref = currentHref.replace(/\/[0-9]+$/, '/' + dbId);
+                    } else if (/\/Details$/.test(currentHref) || /\/Details\/$/.test(currentHref)) {
+                        var newHref = currentHref.replace(/\/+$/, '') + '/' + dbId;
+                    } else {
+                        var newHref = currentHref.split('?')[0].replace(/\/+$/, '') + '/' + dbId;
+                    }
+                    $link.attr('href', newHref);
+                }
+            });
+
+            indexInput.val(newIdx);
+        }
+
+
+        function jumpToId(type) {
+            var inputId = $('#' + type + '-id-jump').val();
+
+            if (!/^\d+$/.test(inputId)) {
+                alert("Please enter a valid ID number.");
+                $('#' + type + '-id-jump').val('');
+                return;
+            }
+
+            var idToJump = parseInt(inputId);
+            // Accesses the globally populated map
+            var newIdx = staffIdMap[type][idToJump];
+
+            if (newIdx !== undefined) {
+                var indexInput = $('#' + type + '-index');
+                var currentIdx = parseInt(indexInput.val());
+
+                if (newIdx === currentIdx) {
+                    $('#' + type + '-id-jump').val('');
+                    return;
+                }
+
+                $('#' + type + '-' + currentIdx).fadeOut(100, function () {
+                    var $newItem = $('#' + type + '-' + newIdx);
+                    $newItem.fadeIn(200);
+
+                    var dbId = $newItem.data(type + '-id');
+
+                    // Set the new item's ID as the placeholder and clear the value
+                    $('#' + type + '-id-jump').attr('placeholder', dbId);
+                    $('#' + type + '-id-jump').val('');
+
+                    var $link = $('#' + type + '-details-link');
+                    if ($link.length > 0) {
+                        var currentHref = $link.attr('href');
+                        if (/\/[0-9]+$/.test(currentHref)) {
+                            var newHref = currentHref.replace(/\/[0-9]+$/, '/' + dbId);
+                        } else if (/\/Details$/.test(currentHref) || /\/Details\/$/.test(currentHref)) {
+                            var newHref = currentHref.replace(/\/+$/, '') + '/' + dbId;
+                        } else {
+                            var newHref = currentHref.split('?')[0].replace(/\/+$/, '') + '/' + dbId;
+                        }
+                        $link.attr('href', newHref);
+                    }
+                });
+
+                indexInput.val(newIdx);
+            } else {
+                alert(type.charAt(0).toUpperCase() + type.slice(1) + " ID " + idToJump + " not found.");
+                $('#' + type + '-id-jump').val('');
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // Initialization on Document Ready: Sets initial placeholder and link URL
+        // ------------------------------------------------------------------
+
+        $(document).ready(function () {
+            // Panels to initialize: staff, customer, product
+            ['staff', 'customer', 'product'].forEach(function (type) {
+                var initialItem = $('#' + type + '-0');
+
+                if (initialItem.length > 0) {
+                    var initialId = initialItem.data(type + '-id');
+
+                    if (initialId) {
+                        $('#' + type + '-id-jump').attr('placeholder', initialId);
+
+                        var $link = $('#' + type + '-details-link');
+                        if ($link.length > 0) {
+                            var currentHref = $link.attr('href');
+
+                            if (/\/[0-9]+$/.test(currentHref)) {
+                                var newHref = currentHref.replace(/\/[0-9]+$/, '/' + initialId);
+                            } else if (/\/Details$/.test(currentHref) || /\/Details\/$/.test(currentHref)) {
+                                var newHref = currentHref.replace(/\/+$/, '') + '/' + initialId;
+                            } else {
+                                var newHref = currentHref.split('?')[0].replace(/\/+$/, '') + '/' + initialId;
+                            }
+                            $link.attr('href', newHref);
+                        }
+                    }
+                }
+            });
+        });
+
+    </script>
+}

@@ -3,37 +3,183 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewBag.Title - My ASP.NET Application</title>
+    <title>@ViewBag.Title - Bike Store Application</title>
+
+
+    <link rel="stylesheet" href="~/Content/bootstrap-grid.css" />
+    <link rel="icon" type="image/png" href="@Url.Content("~/Images/BikeStore-Logo.png")">
+    <link rel="stylesheet" href="~/Content/SharedStyles.css" />
+
     @Styles.Render("~/Content/css")
     @Scripts.Render("~/bundles/modernizr")
 </head>
 <body>
-    <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark">
-        <div class="container">
-            @Html.ActionLink("Application name", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
-            <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" title="Toggle navigation" aria-controls="navbarSupportedContent"
-                    aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse d-sm-inline-flex justify-content-between">
-                <ul class="navbar-nav flex-grow-1">
-                    <li>@Html.ActionLink("Home", "Index", "Home", new { area = "" }, new { @class = "nav-link" })</li>
-                    <li>@Html.ActionLink("About", "About", "Home", new { area = "" }, new { @class = "nav-link" })</li>
-                    <li>@Html.ActionLink("Contact", "Contact", "Home", new { area = "" }, new { @class = "nav-link" })</li>
-                </ul>
+
+    <div class="card-nav-container">
+        <nav class="card-nav" style="background-color: var(--navbar-background);">
+
+            @* Top section of the navigation (always visible). *@
+            <div class="card-nav-top">
+                @* Hamburger Menu icon/button to toggle the nav content. *@
+                <div class="hamburger-menu"
+                     role="button"
+                     aria-label="Open menu"
+                     tabindex="0"
+                     style="color: var(--neutral-gray);">
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                </div>
+
+                @* Application Logo. *@
+                <div class="logo-container">
+                    <img src="~/Images/BikeStore-Logo.png" alt="Application Logo" class="logo" />
+                </div>
+
+                @* Call-to-Action button that links to the Home page. *@
+                <button type="button"
+                        class="card-nav-cta-button"
+                        style="background-color: var(--primary-color); color: white;"
+                        onclick="window.location.href='@Url.Action("Index", "Home")'">
+                    Home
+                </button>
+            </div>
+
+            @* Navigation content area that expands/collapses. *@
+        <div class="card-nav-content" aria-hidden="true">
+            @* Nav Card 1: System Links*@
+            <div class="nav-card" style="background-color: var(--card-nav-dark); color: #fff;">
+                <div class="nav-card-label">System</div>
+                <div class="nav-card-links">
+                    <a class="nav-card-link" href="@Url.Action("Index", "Home")" aria-label="Go to the homepage">
+                        <span class="nav-card-link-icon">↗</span>
+                        Homepage
+                    </a>
+                    <a class="nav-card-link" href="@Url.Action("Maintain", "Home")">
+                        <span class="nav-card-link-icon">↗</span>
+                        Maintain
+                    </a>
+                    <a class="nav-card-link" href="@Url.Action("Reports", "Home")">
+                        <span class="nav-card-link-icon">↗</span>
+                        Reports
+                    </a>
+                </div>
+            </div>
+
+            @* Nav Card 2: Raw Data (Staff, Customers, Products) *@
+            <div class="nav-card" style="background-color: var(--card-nav-dark); color: #fff;">
+                <div class="nav-card-label">Raw Data</div>
+                <div class="nav-card-links">
+                    <a class="nav-card-link" href="@Url.Action("Index", "staffs")">
+                        <span class="nav-card-link-icon">↗</span>
+                        Staff
+                    </a>
+                    <a class="nav-card-link" href="@Url.Action("Index", "customers")">
+                        <span class="nav-card-link-icon">↗</span>
+                        Customers
+                    </a>
+                    <a class="nav-card-link" href="@Url.Action("Index", "products")">
+                        <span class="nav-card-link-icon">↗</span>
+                        Products
+                    </a>
+                </div>
             </div>
         </div>
-    </nav>
-    <div class="container body-content">
+        </nav>
+    </div>
+
+    <div class="container body-content" style="padding-top: 100px;">
         @RenderBody()
         <hr />
         <footer>
-            <p>&copy; @DateTime.Now.Year - My ASP.NET Application</p>
+            <p>&copy; @DateTime.Now.Year - Xario Zeekoei HW03</p>
         </footer>
     </div>
 
     @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/bootstrap")
     @RenderSection("scripts", required: false)
+
+    @* START: JavaScript for controlling the card-style navigation's open/close animation. *@
+    <script>
+        $(document).ready(function () {
+            const BASE_NAV_HEIGHT = 70;
+            const CARD_STAGGER_DELAY = 80;
+
+            // FUNCTION DEFINITION IS CRITICAL FOR BOTH OPEN AND CLOSE SEQUENCES
+            function animateCards(navEl, direction) {
+                var $cards = navEl.find('.nav-card');
+
+                if (direction === 'open') {
+                    // Open: Animate cards in order (top to bottom).
+                    $cards.each(function (index) {
+                        setTimeout(() => {
+                            $(this).addClass('active');
+                        }, index * CARD_STAGGER_DELAY);
+                    });
+                } else {
+                    // Close: Animate cards in reverse order (bottom to top) for a smooth exit.
+                    $cards.get().reverse().forEach(function (card, index) {
+                        setTimeout(() => {
+                            $(card).removeClass('active');
+                        }, index * (CARD_STAGGER_DELAY / 2));
+                    });
+                }
+            }
+
+            // Click handler for the hamburger menu button.
+            $('.hamburger-menu').on('click', function () {
+                var $nav = $(this).closest('.card-nav');
+                var $hamburger = $(this);
+                var isExpanded = $nav.hasClass('open');
+
+                if (!isExpanded) {
+                    // --- OPEN SEQUENCE ---
+                    var $content = $nav.find('.card-nav-content');
+
+                    // 1. Calculate open height dynamically
+                    $content.css({ 'opacity': 0, 'pointer-events': 'auto', 'visibility': 'visible', 'position': 'static', 'height': 'auto' });
+
+                    var contentHeight = $content.get(0).scrollHeight;
+                    var newHeight = contentHeight + BASE_NAV_HEIGHT + 10 + 20; // 20 accounts for the new top padding
+
+                    // Restore temporary styles
+                    $content.css({ 'visibility': 'hidden', 'position': 'absolute', 'height': '' });
+
+                    // 2. Animate nav height and set classes
+                    $nav.css('height', newHeight + 'px');
+                    $nav.addClass('open');
+                    $hamburger.addClass('open').attr('aria-label', 'Close menu'); // ADDS .open CLASS
+
+                    // 3. Stagger cards once height transition has started.
+                    setTimeout(() => {
+                        $content.css({ 'opacity': 1, 'visibility': 'visible', 'pointer-events': 'auto' });
+                        animateCards($nav, 'open');
+                    }, 50);
+
+                } else {
+                    // --- CLOSE SEQUENCE ---
+                    var $content = $nav.find('.card-nav-content');
+
+                    // 1. Stagger card exit animation first.
+                    animateCards($nav, 'close');
+
+                    // 2. Collapse nav height and remove classes
+                    setTimeout(() => {
+                        $nav.css('height', BASE_NAV_HEIGHT + 'px');
+                        $content.css({ 'opacity': 0, 'pointer-events': 'none' });
+                        $nav.removeClass('open');
+                        $hamburger.removeClass('open').attr('aria-label', 'Open menu'); // REMOVES .open CLASS
+
+                        // 3. Clean up content visibility after height transition ends.
+                        setTimeout(() => {
+                            $content.css('visibility', 'hidden');
+                        }, 400);
+
+                    }, 150);
+                }
+            });
+        });
+    </script>
+    @* END: JavaScript for controlling the card-style navigation's open/close animation. *@
 </body>
 </html>
