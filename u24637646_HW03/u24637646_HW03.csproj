@@ -170,9 +170,11 @@
       <DependentUpon>BikeStoresModel.tt</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ViewModels\CustomerPurchaseViewModel.cs" />
     <Compile Include="ViewModels\CustomerViewModel.cs" />
     <Compile Include="ViewModels\HomeIndexViewModel.cs" />
     <Compile Include="ViewModels\ProductViewModel.cs" />
+    <Compile Include="ViewModels\StaffSaleViewModel.cs" />
     <Compile Include="ViewModels\StaffViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -196,6 +198,24 @@
     <Content Include="Global.asax" />
     <Content Include="Content\Site.css" />
     <Content Include="Images\BikeStore-Logo.png" />
+    <Content Include="Images\Electra1.jpeg" />
+    <Content Include="Images\Electra2.jpeg" />
+    <Content Include="Images\Haro1.jpeg" />
+    <Content Include="Images\Haro2.jpeg" />
+    <Content Include="Images\Heller1.jpeg" />
+    <Content Include="Images\Heller2.jpeg" />
+    <Content Include="Images\Pure Cycles1.jpeg" />
+    <Content Include="Images\Pure Cycles2.jpeg" />
+    <Content Include="Images\Ritchey2.jpeg" />
+    <Content Include="Images\Ritchey1.jpeg" />
+    <Content Include="Images\Strider1.jpeg" />
+    <Content Include="Images\Strider2.jpeg" />
+    <Content Include="Images\Sun2.jpeg" />
+    <Content Include="Images\Sun1.jpeg" />
+    <Content Include="Images\Surly1.jpeg" />
+    <Content Include="Images\Surly2.jpeg" />
+    <Content Include="Images\Trek1.jpeg" />
+    <Content Include="Images\Trek2.jpeg" />
     <Content Include="Models\BikeStoresModel.Context.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <DependentUpon>BikeStoresModel.edmx</DependentUpon>
@@ -231,6 +251,8 @@
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
     <Content Include="Scripts\modernizr-2.8.3.js" />
+    <Content Include="Scripts\_IndexScripts.js" />
+    <Content Include="Scripts\_LayoutScripts.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>

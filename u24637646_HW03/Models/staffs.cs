@@ -11,8 +11,7 @@ namespace u24637646_HW03.Models
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel.DataAnnotations;
-
+    
     public partial class staffs
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
@@ -29,8 +28,6 @@ namespace u24637646_HW03.Models
         public string last_name { get; set; }
         public string email { get; set; }
         public string phone { get; set; }
-
-        [Range(0, 1, ErrorMessage = "Active status must be 1 (Active) or 0 (Inactive).")]
         public byte active { get; set; }
         public int store_id { get; set; }
         public Nullable<int> manager_id { get; set; }

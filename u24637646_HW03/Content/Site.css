@@ -1,9 +1,25 @@
-﻿/* Set padding to keep content from hitting the edges */
+﻿:root {
+    --navbar-background: #343a40;
+    --primary-color: #007bff;
+    --neutral-gray: #f8f9fa;
+    --card-nav-dark-1: #495057;
+}
+
+/* Set padding to keep content from hitting the edges */
 .body-content {
     margin-top: 15px;
     padding-left: 15px;
     padding-right: 15px;
+    
 }
+
+.heading-logo {
+    background-color: black;
+    width: auto;
+    height: 150px;
+    border-radius: 25px;
+}
+
 
 /* Override the default bootstrap behavior where horizontal description lists 
     will truncate terms that are too long to fit in the left column 
@@ -20,7 +36,8 @@ textarea {
 }
 
 .dashboard-panel {
-    height: 500px;
+    height: 1000px;
+    border-radius: 10px;
 }
 
 .panel-heading {
@@ -48,17 +65,25 @@ textarea {
         display: inline-flex;
     }
 
-/* 🔑 REMOVED: Since the <hr> was removed from the HTML, this is no longer needed. 
-    .panel-footer hr {
-        margin: 5px auto;
-        width: 50%;
-    } */
+.panel-body .sales-list {
+    text-align: left !important; /* Force text alignment left */
+    padding-left: 20px !important; /* Standard list padding for indentation */
+    margin: 0 !important; /* Ensure no auto margins are interfering */
+    width: 100%; /* Ensure it spans the full width of its parent */
+    height: 275px;
+    background-color: slategray;
+    border-radius: 10px;
+    color: white;
+}
 
 .panel-body {
     background-color: lightgrey;
     padding: 15px;
     padding-bottom: 10px;
     border-radius: 3px 3px 0 0;
+    text-align: left !important;
+    border-radius: 10px;
+    height: 600px;
 }
 
 .detail-item {
@@ -70,6 +95,11 @@ textarea {
 .panel-nav {
     color: #337ab7;
     border: none;
+}
+
+.sales-list {
+    text-align: left; /* Overrides the parent .panel-body .text-center */
+    padding-left: 10px; /* Adjust padding to make it look clean */
 }
 
 /* 🔑 NEW: Container to center the ID jump block */
@@ -114,12 +144,7 @@ textarea {
 /* SharedStyles.css */
 
 /* 1. CSS Variables for Theming */
-:root {
-    --navbar-background: #343a40;
-    --primary-color: #007bff;
-    --neutral-gray: #f8f9fa;
-    --card-nav-dark-1: #495057;
-}
+
 
 /* 2. Container and Fixed Positioning */
 .card-nav-container {

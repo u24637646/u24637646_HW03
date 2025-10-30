@@ -11,8 +11,7 @@ namespace u24637646_HW03.Models
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
-
+    
     public partial class products
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
@@ -21,27 +20,14 @@ namespace u24637646_HW03.Models
             this.order_items = new HashSet<order_items>();
             this.stocks = new HashSet<stocks>();
         }
-
-        [DisplayName("Product ID")]
+    
         public int product_id { get; set; }
-
-        [DisplayName("Product Name")]
         public string product_name { get; set; }
-
-        // <-- ADDED: Explicit Foreign Key for Brand
-        [DisplayName("Brand")]
         public int brand_id { get; set; }
-
-        // <-- ADDED: Explicit Foreign Key for Category
-        [DisplayName("Category")]
         public int category_id { get; set; }
-
-        [DisplayName("Model Year")]
         public short model_year { get; set; }
-
-        [DisplayName("List Price")]
         public decimal list_price { get; set; }
-
+    
         public virtual brands brands { get; set; }
         public virtual categories categories { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]

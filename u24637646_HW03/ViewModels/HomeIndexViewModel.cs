@@ -13,6 +13,11 @@ namespace u24637646_HW03.ViewModels
         public IEnumerable<CustomerViewModel> CustomersList { get; set; }
         public IEnumerable<ProductViewModel> ProductsList { get; set; }
 
-        
+        // --- NEW PROPERTY FOR STAFF SALES ---
+        public IEnumerable<StaffSaleViewModel> StaffSalesList { get; set; }
+        public List<CustomerPurchaseViewModel> CustomerPurchasesList { get; set; }
+
+        public StaffViewModel ModalStaff { get; set; }
+        public bool ShowStaffModal { get; set; } // Flag to trigger the modal
     }
 }
