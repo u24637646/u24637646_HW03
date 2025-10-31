@@ -18,6 +18,6 @@ namespace u24637646_HW03.ViewModels
         public List<CustomerPurchaseViewModel> CustomerPurchasesList { get; set; }
 
         public StaffViewModel ModalStaff { get; set; }
-        public bool ShowStaffModal { get; set; } // Flag to trigger the modal
+        public bool ShowStaffCreateModal { get; set; } 
     }
 }

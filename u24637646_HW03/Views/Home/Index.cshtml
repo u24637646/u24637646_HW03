@@ -5,45 +5,98 @@
 }
 
 <div class="text-center">
-    <h1>Bike Stores</h1>
+    <h1>Bike Stores Dashboard</h1>
 </div>
 
+@* Success Message Display (using TempData set in the controller) *@
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible" role="alert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        @Html.Raw(TempData["SuccessMessage"])
+    </div>
+}
+
 <div class="body">
+
+    @* === START PRODUCT FILTER FORM (Only Dropdowns) === *@
+    @using (Html.BeginForm("Index", "Home", FormMethod.Get, new { @class = "product-filter-form" }))
+    {
+        <div class="product-filters" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
+
+            @{
+                // Get the lists and selected values from ViewData (Set by the Controller)
+                var allBrands = ViewData["AllBrands"] as List<string> ?? new List<string>();
+                var allCategories = ViewData["AllCategories"] as List<string> ?? new List<string>();
+
+                var selectedBrand = ViewData["SelectedBrand"] as string;
+                var selectedCategory = ViewData["SelectedCategory"] as string;
+
+                // Retrieve isFiltered for status message ONLY (Fixes CS0103 warning)
+                bool isFiltered = (bool)(ViewData["IsFiltered"] ?? false);
+            }
+
+            @* --- Brand Dropdown --- *@
+            <select id="brand-filter" name="selectedBrand" class="form-control" style="flex: 1 1 30%; min-width: 100px;">
+                <option value="" @(string.IsNullOrEmpty(selectedBrand) ? "selected" : "")>All Brands</option>
+                @foreach (var brand in allBrands)
+                {
+                    <option value="@brand" @(brand == selectedBrand ? "selected" : "")>@brand</option>
+                }
+            </select>
+
+            @* --- Category Dropdown --- *@
+            <select id="category-filter" name="selectedCategory" class="form-control" style="flex: 1 1 30%; min-width: 100px;">
+                <option value="" @(string.IsNullOrEmpty(selectedCategory) ? "selected" : "")>All Categories</option>
+                @foreach (var category in allCategories)
+                {
+                    <option value="@category" @(category == selectedCategory ? "selected" : "")>@category</option>
+                }
+            </select>
+
+            @* --- Apply Button --- *@
+            <button type="submit" class="btn btn-warning" style="flex: 1 1 20%; min-width: 80px;">Apply Filter</button>
+        </div>
+
+        <div style="margin-top: 5px; text-align: center;">
+            <a href="@Url.Action("Index", "Home")" class="btn btn-default btn-sm">Reset Filter</a>
+        </div>
+    }
+    @* === END PRODUCT FILTER FORM === *@
+
     <div class="row">
 
-        @* STAFF PANEL (UNMODIFIED) *@
+        @*--- Staff Panel (Standard Carousel) ---*@
         <div class="col-md-4">
             <div class="panel panel-success dashboard-panel">
                 <div class="panel-heading">
                     <h3 class="panel-title"><i class="glyphicon glyphicon-user"></i>Staff</h3>
-                    @Html.ActionLink("Create", "Create", "staffs", null, new { @class = "btn btn-success btn-block" })
+                    <button type="button" id="createStaffBtn" class="btn btn-info" data-toggle="modal" data-target="#createStaffModal">
+                        Create
+                    </button>
                 </div>
                 <div class="panel-body text-center" id="staff-panel-body">
                     @if (Model.StaffsList != null && Model.StaffsList.Any())
                     {
                         <input type="hidden" id="staff-index" value="0" />
-
                         <span id="staff-count" style="display:none;">@(Model.StaffsList.Count())</span>
-
                         <script>
                             var staffIdMap = staffIdMap || {};
                             staffIdMap['staff'] = {};
                         </script>
-
                         for (int i = 0; i < Model.StaffsList.Count(); i++)
                         {
                             var staff = Model.StaffsList.ElementAt(i);
-
                             <script>
                             staffIdMap['staff'][@staff.staff_id] = @i;
                             </script>
-
                             <div class="detail-item staff-item" id="staff-@i" data-staff-id="@staff.staff_id" style="display: @(i == 0 ? "block" : "none");">
-                                <h4 class="text-success">@staff.staff_id. @staff.first_name @staff.last_name</h4>
+                                <h4 class="text-center">@staff.first_name @staff.last_name</h4>
                                 <p>Email: @staff.email</p>
                                 <p>Phone: @staff.phone</p>
                                 <p>Store: @staff.store_name</p>
                                 <p>Manager: @staff.manager_name</p>
+                                <br />
                                 <hr />
                                 <h5>Recent Sales:</h5>
                                 <ul class="list-unstyled sales-list">
@@ -71,33 +124,29 @@
                         <p class="text-danger">No staff records found.</p>
                     }
                 </div>
-
                 @if (Model.StaffsList != null && Model.StaffsList.Any())
                 {
                     <div class="panel-footer staff-navigator text-center">
-
                         <div class="id-jump-container">
                             <div class="input-group input-group-sm mb-2 id-input-group">
                                 <input id="staff-id-jump"
                                        type="number"
                                        class="panel-nav form-control text-center"
                                        min="1"
+                                       placeholder="1"
                                        onchange="jumpToId('staff')"
                                        onkeypress="if(event.keyCode == 13) { jumpToId('staff'); return false; }" />
                                 <p> /@(Model.StaffsList.Count())</p>
                             </div>
                         </div>
-
                         <div class="btn-group btn-group-sm" role="group" style="margin-top: 5px;">
-                            <button type="button" class="btn btn-success" onclick="navigate('staff', -1)">
+                            <button type="button" class="btn btn-info" onclick="navigate('staff', -1)">
                                 <i class="glyphicon glyphicon-chevron-left"><</i>
                             </button>
-
                             @Html.ActionLink("View Details", "Details", "Staffs",
                                 new { id = Model.StaffsList.First().staff_id },
-                                new { @class = "btn btn-success", @id = "staff-details-link" })
-
-                            <button type="button" class="btn btn-success" onclick="navigate('staff', 1)">
+                                new { @class = "btn btn-info", @id = "staff-details-link" })
+                            <button type="button" class="btn btn-info" onclick="navigate('staff', 1)">
                                 <i class="glyphicon glyphicon-chevron-right">></i>
                             </button>
                         </div>
@@ -106,13 +155,13 @@
                 else
                 {
                     <div class="panel-footer">
-                        @Html.ActionLink("View All Staff", "Index", "staffs", null, new { @class = "btn btn-success btn-block" })
+                        @Html.ActionLink("View All Staff", "Index", "staffs", null, new { @class = "btn btn-success btn-info" })
                     </div>
                 }
             </div>
         </div>
 
-        @* CUSTOMERS PANEL (UNMODIFIED) *@
+        @*--- Customer Panel (Standard Carousel) ---*@
         <div class="col-md-4">
             <div class="panel panel-info dashboard-panel">
                 <div class="panel-heading">
@@ -123,34 +172,27 @@
                     @if (Model.CustomersList != null && Model.CustomersList.Any())
                     {
                         <input type="hidden" id="customer-index" value="0" />
-
                         <span id="customer-count" style="display:none;">@(Model.CustomersList.Count())</span>
-
                         <script>
                             var staffIdMap = staffIdMap || {};
                             staffIdMap['customer'] = {};
                         </script>
-
                         for (int i = 0; i < Model.CustomersList.Count(); i++)
                         {
                             var customer = Model.CustomersList.ElementAt(i);
-
                             <script>
                             staffIdMap['customer'][@customer.customer_id] = @i;
                             </script>
-
                             <div class="detail-item customer-item" id="customer-@i" data-customer-id="@customer.customer_id" style="display: @(i == 0 ? "block" : "none");">
-                                <h4 class="text-info">@customer.customer_id. @customer.first_name @customer.last_name</h4>
+                                <h4 class="text-center"> @customer.first_name @customer.last_name</h4>
                                 <p>Email: @customer.email</p>
                                 <p>Phone: @customer.phone</p>
                                 <p>Location: @customer.city, @customer.state</p>
                                 <p>Street: @customer.street</p>
                                 <p>Zip: @customer.zip_code</p>
-
                                 <hr />
                                 <h5>Recent Purchases:</h5>
                                 <ul class="list-unstyled sales-list">
-                                    @* Using sales-list for left-alignment *@
                                     @{
                                         var customerPurchases = Model.CustomerPurchasesList
                                         .Where(p => p.customer_id == customer.customer_id).Take(5);
@@ -159,7 +201,7 @@
                                     {
                                         foreach (var purchase in customerPurchases)
                                         {
-                                            <li>Purchased: @purchase.product_name (Qty: @purchase.quantity)</li>
+                                            <li>Purchased: @purchase.product_name <br /> (Qty: @purchase.quantity)</li>
                                         }
                                     }
                                     else
@@ -175,33 +217,28 @@
                         <p class="text-danger">No customer records found.</p>
                     }
                 </div>
-
                 @if (Model.CustomersList != null && Model.CustomersList.Any())
                 {
                     <div class="panel-footer customer-navigator text-center">
-
-
                         <div class="id-jump-container">
                             <div class="input-group input-group-sm mb-2 id-input-group">
                                 <input id="customer-id-jump"
                                        type="number"
                                        class="panel-nav form-control text-center"
                                        min="1"
+                                       placeholder="1"
                                        onchange="jumpToId('customer')"
                                        onkeypress="if(event.keyCode == 13) { jumpToId('customer'); return false; }" />
                                 <p> /@(Model.CustomersList.Count())</p>
                             </div>
                         </div>
-
                         <div class="btn-group btn-group-sm" role="group" style="margin-top: 5px;">
                             <button type="button" class="btn btn-info" onclick="navigate('customer', -1)">
                                 <i class="glyphicon glyphicon-chevron-left"><</i>
                             </button>
-
                             @Html.ActionLink("View Details", "Details", "Customers",
                                 new { id = Model.CustomersList.First().customer_id },
                                 new { @class = "btn btn-info", @id = "customer-details-link" })
-
                             <button type="button" class="btn btn-info" onclick="navigate('customer', 1)">
                                 <i class="glyphicon glyphicon-chevron-right">></i>
                             </button>
@@ -217,13 +254,15 @@
             </div>
         </div>
 
-        @* PRODUCTS PANEL - UPDATED TO INCLUDE IMAGE *@
+
+        @*--- Products Panel (Fixed for permanent carousel display) ---*@
         <div class="col-md-4">
             <div class="panel panel-warning dashboard-panel">
+
                 <div class="panel-heading">
-                    <h3 class="panel-title"><i class="glyphicon glyphicon-tag"></i> Products</h3>
-                    @Html.ActionLink("Create", "Create", "Products", null, new { @class = "btn btn-warning btn-block" })
+                    <h3 class="panel-title"><i class="glyphicon glyphicon-tag"></i> Products </h3>
                 </div>
+
                 <div class="panel-body text-center" id="product-panel-body">
                     @if (Model.ProductsList != null && Model.ProductsList.Any())
                     {
@@ -239,30 +278,28 @@
                         for (int i = 0; i < Model.ProductsList.Count(); i++)
                         {
                             var product = Model.ProductsList.ElementAt(i);
-
-                            // --- NEW C# LOGIC FOR IMAGE URL ---
-                            // 1. Sanitize the brand name to match file naming conventions (e.g., remove spaces, make it title case/camel case)
-                            var brandBaseName = product.brand_name;
-
-                            // 2. Generate a random number (1 or 2)
-                            var randomImageSuffix = new Random().Next(1, 3); // 1 or 2
-
-                            // 3. Construct the filename (assuming file path is correct: /Images/Products/)
+                            var brandBaseName = product.brand_name.Split(' ')[0];
+                            var randomImageSuffix = (i % 2) + 1;
                             var imageUrl = Url.Content("~/Images/" + brandBaseName + randomImageSuffix + ".jpeg");
 
                             <script>
                             staffIdMap['product'][@product.product_id] = @i;
                             </script>
 
-                            <div class="detail-item product-item" id="product-@i" data-product-id="@product.product_id" style="display: @(i == 0 ? "block" : "none");">
-                                <h4 class="text-warning">@product.product_id. @product.product_name</h4>
+                            @* CRITICAL FIX: The CSS is explicitly set to block ONLY for the first item (i == 0)
+                                to ensure single-item display (carousel behavior) at all times. *@
+                            <div class="detail-item product-item"
+                                 id="product-@i"
+                                 data-product-id="@product.product_id"
+                                 data-brand="@product.brand_name"
+                                 data-category="@product.category_name"
+                                 style="display: @(i == 0 ? "block" : "none");">
 
-                                @* IMAGE DISPLAY - NEW CODE *@
+                                <h4 class="text-center">@product.product_name</h4>
+
                                 <img src="@imageUrl"
                                      alt="Image of @product.product_name"
-                                     style="max-height: 150px; width: auto; margin: 10px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-                                     onerror="this.onerror=null; this.src='@Url.Content("~/Images/Products/placeholder.png")';" />
-                                @* END IMAGE DISPLAY *@
+                                     style=" align-content:center; max-height: 150px; width: auto; margin: 10px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" />
 
                                 <p>Brand: @product.brand_name</p>
                                 <p>Category: @product.category_name</p>
@@ -278,17 +315,18 @@
                     }
                 </div>
 
+
                 @if (Model.ProductsList != null && Model.ProductsList.Any())
                 {
                     <div class="panel-footer product-navigator text-center">
-
-
+                        @* Navigation controls are always displayed if products exist *@
                         <div class="id-jump-container">
                             <div class="input-group input-group-sm mb-2 id-input-group">
                                 <input id="product-id-jump"
                                        type="number"
                                        class="panel-nav form-control text-center"
                                        min="1"
+                                       placeholder="1"
                                        onchange="jumpToId('product')"
                                        onkeypress="if(event.keyCode == 13) { jumpToId('product'); return false; }" />
                                 <p> /@(Model.ProductsList.Count())</p>
@@ -296,15 +334,15 @@
                         </div>
 
                         <div class="btn-group btn-group-sm" role="group" style="margin-top: 5px;">
-                            <button type="button" class="btn btn-warning" onclick="navigate('product', -1)">
+                            <button type="button" class="btn btn-info" onclick="navigate('product', -1)">
                                 <i class="glyphicon glyphicon-chevron-left"><</i>
                             </button>
 
                             @Html.ActionLink("View Details", "Details", "Products",
                                 new { id = Model.ProductsList.First().product_id },
-                                new { @class = "btn btn-warning", @id = "product-details-link" })
+                                new { @class = "btn btn-info", @id = "product-details-link" })
 
-                            <button type="button" class="btn btn-warning" onclick="navigate('product', 1)">
+                            <button type="button" class="btn btn-info" onclick="navigate('product', 1)">
                                 <i class="glyphicon glyphicon-chevron-right">></i>
                             </button>
                         </div>
@@ -313,12 +351,82 @@
                 else
                 {
                     <div class="panel-footer">
-                        @Html.ActionLink("View All Products", "Index", "Products", null, new { @class = "btn btn-warning btn-block" })
+                        @Html.ActionLink("View All Products", "Index", "Products", null, new { @class = "btn btn-info btn-block" })
                     </div>
                 }
             </div>
         </div>
     </div>
+
+    @*--- Modal Popups (Unchanged) ---*@
+    <div class="modal fade" id="createStaffModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                </div>
+                <div class="modal-body" id="staffModalBody">
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<script src="@Url.Content("~/Scripts/_IndexScripts.js")"></script>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    <script src="@Url.Content("~/Scripts/_IndexScripts.js")"></script>
+    <script>
+    // ------------------------------------------------------------------
+    // Modal Popups (Unchanged)
+    // ------------------------------------------------------------------
+        $(function () {
+            // ⭐ 1. Load the Partial View when the button is clicked
+        $('#createStaffBtn').click(function () {
+            $.ajax({
+                url: '@Url.Action("CreatePartial", "Staffs")',
+                type: 'GET',
+                cache: false,
+                success: function (data) {
+                    $('#staffModalBody').html(data);
+                    $('#createStaffModal').modal('show');
+
+                    $.validator.unobtrusive.parse('#staffModalBody');
+                },
+                error: function () {
+                    alert("Could not load the creation form.");
+                }
+            });
+        });
+
+        // ⭐ 2. Handle the Form Submission via AJAX
+        $('#createStaffModal').on('submit', '#createStaffForm', function (e) {
+            e.preventDefault();
+
+            var form = $(this);
+            if (!form.valid()) {
+                return;
+            }
+
+            $.ajax({
+                url: form.attr('action'),
+                type: form.attr('method'),
+                data: form.serialize(),
+                success: function (result) {
+                    if (result.startsWith('<!DOCTYPE html>')) {
+                        window.location.href = '@Url.Action("Index", "Home")';
+                    } else {
+                        $('#staffModalBody').html(result);
+                        $.validator.unobtrusive.parse('#staffModalBody');
+                    }
+                },
+                error: function () {
+                    alert("An error occurred during staff creation.");
+                }
+            });
+        });
+
+    });
+
+    </script>
+}

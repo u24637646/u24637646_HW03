@@ -113,93 +113,20 @@ function jumpToId(type) {
 
 
 // ------------------------------------------------------------------
-// Product Filtering Logic (NEW)
+// Product Filtering Logic (UPDATED)
 // ------------------------------------------------------------------
 
-function filterProducts() {
+// Function to handle the text search submission
+function filterProductsBySearch() {
     var type = 'product';
-    var searchTerm = $('#' + type + '-search-input').val().toLowerCase().trim();
-    var foundProduct = false;
-    var firstVisibleIndex = -1;
-    var $productItems = $('.product-item');
-    var $resetBtn = $('#product-reset-btn');
-    var $navigator = $('.product-navigator');
+    var searchTerm = $('#' + type + '-search-input').val().trim();
 
-    // Hide all product items initially
-    $productItems.hide();
+    // 1. Set the search term into a hidden input field of the main form
+    //    (You'll need to add this hidden input to the Razor form above)
+    $('#search-term-input').val(searchTerm);
 
-    // If no search term, reset the filter
-    if (searchTerm.length === 0) {
-        resetProductFilter();
-        return;
-    }
-
-    // Loop through all products to find matches and show them
-    $productItems.each(function () {
-        var $item = $(this);
-        // Extract product name from <h4> by removing the ID and dot prefix
-        // Example: "1. Trek Fuel EX 8" -> "Trek Fuel EX 8"
-        var productName = $item.find('h4').text().toLowerCase().split('.').slice(1).join('.').trim();
-
-        if (productName.includes(searchTerm)) {
-            $item.show();
-            foundProduct = true;
-            // Capture the array index of the first matching item
-            if (firstVisibleIndex === -1) {
-                firstVisibleIndex = parseInt($item.attr('id').split('-')[1]);
-            }
-        }
-    });
-
-    // Show the reset button
-    $resetBtn.show();
-
-    if (foundProduct) {
-        // Update the navigation index to the first visible item's array index
-        var indexInput = $('#' + type + '-index');
-        indexInput.val(firstVisibleIndex);
-
-        // Update Details Link and placeholder for the first found product
-        var $firstItem = $('#' + type + '-' + firstVisibleIndex);
-        var dbId = $firstItem.data(type + '-id');
-
-        updateDetailsLink(type, dbId);
-
-        $('#' + type + '-id-jump').attr('placeholder', dbId);
-        $('#' + type + '-id-jump').val('');
-
-        // Hide the default navigator as the list view changes
-        $navigator.hide();
-    } else {
-        // Handle no results
-        alert("No products found matching '" + searchTerm + "'.");
-        // Ensure navigator remains hidden when there are no matching results
-        $navigator.hide();
-    }
-}
-
-function resetProductFilter() {
-    var type = 'product';
-    var indexInput = $('#' + type + '-index');
-    var currentIdx = parseInt(indexInput.val());
-
-    // 1. Hide the reset button and clear the search input
-    $('#' + type + '-search-input').val('');
-    $('#product-reset-btn').hide();
-
-    // 2. Hide all items and show only the item at the current navigation index
-    $('.product-item').hide();
-    $('#' + type + '-' + currentIdx).show();
-
-    // 3. Show the navigator footer
-    $('.product-navigator').show();
-
-    // Ensure link and placeholder are correct for the current item
-    var $currentItem = $('#' + type + '-' + currentIdx);
-    var dbId = $currentItem.data(type + '-id');
-    updateDetailsLink(type, dbId);
-    $('#' + type + '-id-jump').attr('placeholder', dbId);
-    $('#' + type + '-id-jump').val('');
+    // 2. Submit the main filtering form (which contains all filters)
+    $('.product-filter-form').submit();
 }
 
 // ------------------------------------------------------------------
@@ -221,4 +148,38 @@ $(document).ready(function () {
             }
         }
     });
+
+    // ADD EVENT HANDLERS FOR THE PRODUCT TEXT SEARCH
+    var $searchInput = $('#product-search-input');
+
+    // 1. Add a hidden input to the form to capture text search
+    // (This is often easier to put in the Razor view, but we'll inject it here for robust client-side handling)
+    $('.product-filter-form').append('<input type="hidden" name="searchTerm" id="search-term-input" value="@(ViewData["SearchTerm"])" />');
+
+    // 2. Clear the search term on any other filter change (Dropdowns)
+    $('#brand-filter, #category-filter').on('change', function () {
+        $searchInput.val('');
+    });
+
+    // 3. Update text search input to submit the form on Enter key press
+    $searchInput.on('keypress', function (e) {
+        if (e.which === 13) {
+            e.preventDefault(); // Prevent default form submission if outside the form
+            filterProductsBySearch();
+        }
+    });
+
+    // Handle initial state: if a filter is applied, hide the navigator
+    if ($('#brand-filter').val() !== '' || $('#category-filter').val() !== '' || $searchInput.val() !== '') {
+        $('.product-navigator').hide();
+
+        // Hide all items and show them *all* when filters are applied
+        // This is necessary because the default Razor logic only shows product-0
+        $('.product-item').show();
+
+    } else {
+        $('.product-navigator').show();
+        $('.product-item').hide(); // Hide all but the first item if no filters are active
+        $('#product-0').show(); // Show the first item if no filters are active (default view)
+    }
 });

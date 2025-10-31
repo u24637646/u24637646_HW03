@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Web;
+using System.Web.Mvc;
 
 namespace u24637646_HW03.ViewModels
 {
@@ -19,5 +20,6 @@ namespace u24637646_HW03.ViewModels
         //Mapped properties that replace the foreign keys
         public string store_name { get; set; }
         public string manager_name { get; set; }
+        public SelectList AvailableStores { get; set; }
     }
 }

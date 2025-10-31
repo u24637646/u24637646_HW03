@@ -37,8 +37,7 @@
 
                 @* Call-to-Action button that links to the Home page. *@
                 <button type="button"
-                        class="card-nav-cta-button"
-                        style="background-color: var(--primary-color); color: white;"
+                        class="card-nav-cta-button btn-info"
                         onclick="window.location.href='@Url.Action("Index", "Home")'">
                     Home
                 </button>
@@ -91,10 +90,13 @@
         @RenderBody()
     </div>
 
+
+
     @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/bootstrap")
+    @Scripts.Render("~/bundles/jqueryval") @* IMPORTANT: Needed for validation *@
 
-    <script src="@Url.Content("~/Scripts/_LayoutScripts.js")"></script>
+    <script src="@Url.Content("~/Scripts/_LayoutScripts.js")"></script>z
     @RenderSection("scripts", required: false)
 </body>
 </html>

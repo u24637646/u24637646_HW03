@@ -284,6 +284,7 @@
     <Content Include="Views\products\Index.cshtml" />
     <Content Include="Views\Home\Reports.cshtml" />
     <Content Include="Views\Home\Maintain.cshtml" />
+    <Content Include="Views\staffs\_CreatePartial.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

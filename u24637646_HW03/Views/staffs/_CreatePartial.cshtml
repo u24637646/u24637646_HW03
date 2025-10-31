@@ -1,0 +1,88 @@
+﻿@model u24637646_HW03.Models.staffs
+
+@* Start the form which will contain the modal body and footer. *@
+@using (Html.BeginForm("CreatePartial", "staffs", FormMethod.Post, new { id = "createStaffForm" }))
+{
+    @Html.AntiForgeryToken()
+
+    <div class="modal-body">
+        <h4>Create New Staff Member</h4>
+        <hr />
+
+        @* The validation summary needs to be visible within the modal body *@
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+        <div class="form-horizontal">
+            @* Use col-md-3 and col-md-9 for better alignment in a modal's narrower context *@
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.first_name, htmlAttributes: new { @class = "control-label col-md-3" })
+                <div class="col-md-9">
+                    @Html.EditorFor(model => model.first_name, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.first_name, "", new { @class = "text-danger" })
+                </div>
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.last_name, htmlAttributes: new { @class = "control-label col-md-3" })
+                <div class="col-md-9">
+                    @Html.EditorFor(model => model.last_name, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.last_name, "", new { @class = "text-danger" })
+                </div>
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.email, htmlAttributes: new { @class = "control-label col-md-3" })
+                <div class="col-md-9">
+                    @Html.EditorFor(model => model.email, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.email, "", new { @class = "text-danger" })
+                </div>
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.phone, htmlAttributes: new { @class = "control-label col-md-3" })
+                <div class="col-md-9">
+                    @Html.EditorFor(model => model.phone, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.phone, "", new { @class = "text-danger" })
+                </div>
+            </div>
+
+            @* NOTE: Active is a byte and often defaults. You may want a checkbox or a hidden field instead of an EditorFor *@
+            <div class="form-group">
+                @Html.LabelFor(model => model.active, htmlAttributes: new { @class = "control-label col-md-3" })
+                <div class="col-md-9">
+                    @Html.EditorFor(model => model.active, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.active, "", new { @class = "text-danger" })
+                </div>
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.store_id, "Store", htmlAttributes: new { @class = "control-label col-md-3" })
+                <div class="col-md-9">
+                    @* Use "null" as the optionLabel for required dropdowns, or specify a prompt *@
+                    @Html.DropDownList("store_id", null, "--- Select Store ---", new { @class = "form-control" })
+                    @Html.ValidationMessageFor(model => model.store_id, "", new { @class = "text-danger" })
+                </div>
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.manager_id, "Manager", htmlAttributes: new { @class = "control-label col-md-3" })
+                <div class="col-md-9">
+                    @* Use "null" for optional fields, or specify a prompt *@
+                    @Html.DropDownList("manager_id", null, "--- No Manager ---", htmlAttributes: new { @class = "form-control" })
+                    @Html.ValidationMessageFor(model => model.manager_id, "", new { @class = "text-danger" })
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    @* The modal footer contains the action buttons *@
+    <div class="modal-footer">
+        @* Close button must have data-dismiss="modal" *@
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+
+        @* Submit button is now placed here, inside the form, in the footer *@
+        <input type="submit" value="Create" class="btn btn-primary" />
+    </div>
+}
