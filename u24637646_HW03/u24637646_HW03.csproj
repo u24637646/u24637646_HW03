@@ -285,6 +285,7 @@
     <Content Include="Views\Home\Reports.cshtml" />
     <Content Include="Views\Home\Maintain.cshtml" />
     <Content Include="Views\staffs\_CreatePartial.cshtml" />
+    <Content Include="Views\customers\_CreatePartial.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

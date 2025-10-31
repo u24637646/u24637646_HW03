@@ -4,6 +4,28 @@
     ViewBag.Title = "Home";
 }
 
+<style>
+    /* * Essential CSS for the ID jump container.
+     * Ideally, this would be in a separate CSS file, but it's kept here for completeness if you don't have a linked site.css.
+     */
+    .id-jump-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+        .id-jump-container .id-input-group {
+            width: 80px;
+            margin-right: 5px;
+        }
+
+        .id-jump-container p {
+            margin: 0;
+            font-weight: bold;
+        }
+</style>
+
 <div class="text-center">
     <h1>Bike Stores Dashboard</h1>
 </div>
@@ -19,7 +41,7 @@
 
 <div class="body">
 
-    @* === START PRODUCT FILTER FORM (Only Dropdowns) === *@
+    @* === START PRODUCT FILTER FORM === *@
     @using (Html.BeginForm("Index", "Home", FormMethod.Get, new { @class = "product-filter-form" }))
     {
         <div class="product-filters" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
@@ -31,9 +53,6 @@
 
                 var selectedBrand = ViewData["SelectedBrand"] as string;
                 var selectedCategory = ViewData["SelectedCategory"] as string;
-
-                // Retrieve isFiltered for status message ONLY (Fixes CS0103 warning)
-                bool isFiltered = (bool)(ViewData["IsFiltered"] ?? false);
             }
 
             @* --- Brand Dropdown --- *@
@@ -54,24 +73,25 @@
                 }
             </select>
 
-            @* --- Apply Button --- *@
-            <button type="submit" class="btn btn-warning" style="flex: 1 1 20%; min-width: 80px;">Apply Filter</button>
+            <div style="flex: 1 1 10%; min-width: 80px; text-align: center;">
+                <a href="@Url.Action("Index", "Home")" class="btn btn-default btn-sm btn-block">Reset Filter</a>
+            </div>
         </div>
 
-        <div style="margin-top: 5px; text-align: center;">
-            <a href="@Url.Action("Index", "Home")" class="btn btn-default btn-sm">Reset Filter</a>
-        </div>
     }
     @* === END PRODUCT FILTER FORM === *@
 
-    <div class="row">
+    <script>
+        var entityIdMap = entityIdMap || {};
+    </script> 
 
-        @*--- Staff Panel (Standard Carousel) ---*@
+    <div class="row" style="margin-top: 20px;">
+        @*--- Staff Panel ---*@
         <div class="col-md-4">
             <div class="panel panel-success dashboard-panel">
                 <div class="panel-heading">
-                    <h3 class="panel-title"><i class="glyphicon glyphicon-user"></i>Staff</h3>
-                    <button type="button" id="createStaffBtn" class="btn btn-info" data-toggle="modal" data-target="#createStaffModal">
+                    <h3 class="panel-title"><i class="glyphicon glyphicon-user"></i> Staff</h3>
+                    <button type="button" id="createStaffBtn" class="btn btn-info btn-xs pull-right" data-toggle="modal" data-target="#createStaffModal">
                         Create
                     </button>
                 </div>
@@ -80,16 +100,17 @@
                     {
                         <input type="hidden" id="staff-index" value="0" />
                         <span id="staff-count" style="display:none;">@(Model.StaffsList.Count())</span>
-                        <script>
-                            var staffIdMap = staffIdMap || {};
-                            staffIdMap['staff'] = {};
-                        </script>
+
                         for (int i = 0; i < Model.StaffsList.Count(); i++)
                         {
                             var staff = Model.StaffsList.ElementAt(i);
+
+                            @* CRITICAL: Entity ID Mapping for jumpToId function *@
                             <script>
-                            staffIdMap['staff'][@staff.staff_id] = @i;
+                                entityIdMap['staff'] = entityIdMap['staff'] || {};
+                                entityIdMap['staff'][@staff.staff_id] = @i;
                             </script>
+
                             <div class="detail-item staff-item" id="staff-@i" data-staff-id="@staff.staff_id" style="display: @(i == 0 ? "block" : "none");">
                                 <h4 class="text-center">@staff.first_name @staff.last_name</h4>
                                 <p>Email: @staff.email</p>
@@ -124,65 +145,66 @@
                         <p class="text-danger">No staff records found.</p>
                     }
                 </div>
-                @if (Model.StaffsList != null && Model.StaffsList.Any())
-                {
-                    <div class="panel-footer staff-navigator text-center">
+                <div class="panel-footer staff-navigator text-center">
+                    @if (Model.StaffsList != null && Model.StaffsList.Any())
+                    {
                         <div class="id-jump-container">
                             <div class="input-group input-group-sm mb-2 id-input-group">
                                 <input id="staff-id-jump"
                                        type="number"
                                        class="panel-nav form-control text-center"
                                        min="1"
-                                       placeholder="1"
+                                       placeholder="@(Model.StaffsList.First().staff_id)"
                                        onchange="jumpToId('staff')"
                                        onkeypress="if(event.keyCode == 13) { jumpToId('staff'); return false; }" />
-                                <p> /@(Model.StaffsList.Count())</p>
                             </div>
+                            <p> /@(Model.StaffsList.Count())</p>
                         </div>
                         <div class="btn-group btn-group-sm" role="group" style="margin-top: 5px;">
                             <button type="button" class="btn btn-info" onclick="navigate('staff', -1)">
-                                <i class="glyphicon glyphicon-chevron-left"><</i>
+                                <i class="glyphicon glyphicon-chevron-left"></i>
                             </button>
                             @Html.ActionLink("View Details", "Details", "Staffs",
                                 new { id = Model.StaffsList.First().staff_id },
                                 new { @class = "btn btn-info", @id = "staff-details-link" })
                             <button type="button" class="btn btn-info" onclick="navigate('staff', 1)">
-                                <i class="glyphicon glyphicon-chevron-right">></i>
+                                <i class="glyphicon glyphicon-chevron-right"></i>
                             </button>
                         </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="panel-footer">
-                        @Html.ActionLink("View All Staff", "Index", "staffs", null, new { @class = "btn btn-success btn-info" })
-                    </div>
-                }
+                    }
+                    else
+                    {
+                        @Html.ActionLink("View All Staff", "Index", "Staffs", null, new { @class = "btn btn-success btn-info" })
+                    }
+                </div>
             </div>
         </div>
 
-        @*--- Customer Panel (Standard Carousel) ---*@
+        @*--- Customer Panel ---*@
         <div class="col-md-4">
             <div class="panel panel-info dashboard-panel">
                 <div class="panel-heading">
                     <h3 class="panel-title"><i class="glyphicon glyphicon-globe"></i> Customers</h3>
-                    @Html.ActionLink("Create", "Create", "Customers", null, new { @class = "btn btn-info btn-block" })
+                    <button type="button" id="createCustomerBtn" class="btn btn-info btn-xs pull-right" data-toggle="modal" data-target="#createCustomerModal">
+                        Create
+                    </button>
                 </div>
                 <div class="panel-body text-center" id="customer-panel-body">
                     @if (Model.CustomersList != null && Model.CustomersList.Any())
                     {
                         <input type="hidden" id="customer-index" value="0" />
                         <span id="customer-count" style="display:none;">@(Model.CustomersList.Count())</span>
-                        <script>
-                            var staffIdMap = staffIdMap || {};
-                            staffIdMap['customer'] = {};
-                        </script>
+
                         for (int i = 0; i < Model.CustomersList.Count(); i++)
                         {
                             var customer = Model.CustomersList.ElementAt(i);
+
+                            @* CRITICAL: Entity ID Mapping for jumpToId function *@
                             <script>
-                            staffIdMap['customer'][@customer.customer_id] = @i;
+                                entityIdMap['customer'] = entityIdMap['customer'] || {};
+                                entityIdMap['customer'][@customer.customer_id] = @i;
                             </script>
+
                             <div class="detail-item customer-item" id="customer-@i" data-customer-id="@customer.customer_id" style="display: @(i == 0 ? "block" : "none");">
                                 <h4 class="text-center"> @customer.first_name @customer.last_name</h4>
                                 <p>Email: @customer.email</p>
@@ -217,45 +239,43 @@
                         <p class="text-danger">No customer records found.</p>
                     }
                 </div>
-                @if (Model.CustomersList != null && Model.CustomersList.Any())
-                {
-                    <div class="panel-footer customer-navigator text-center">
+                <div class="panel-footer customer-navigator text-center">
+                    @if (Model.CustomersList != null && Model.CustomersList.Any())
+                    {
                         <div class="id-jump-container">
                             <div class="input-group input-group-sm mb-2 id-input-group">
                                 <input id="customer-id-jump"
                                        type="number"
                                        class="panel-nav form-control text-center"
                                        min="1"
-                                       placeholder="1"
+                                       placeholder="@(Model.CustomersList.First().customer_id)"
                                        onchange="jumpToId('customer')"
                                        onkeypress="if(event.keyCode == 13) { jumpToId('customer'); return false; }" />
-                                <p> /@(Model.CustomersList.Count())</p>
                             </div>
+                            <p> /@(Model.CustomersList.Count())</p>
                         </div>
                         <div class="btn-group btn-group-sm" role="group" style="margin-top: 5px;">
                             <button type="button" class="btn btn-info" onclick="navigate('customer', -1)">
-                                <i class="glyphicon glyphicon-chevron-left"><</i>
+                                <i class="glyphicon glyphicon-chevron-left"></i>
                             </button>
                             @Html.ActionLink("View Details", "Details", "Customers",
                                 new { id = Model.CustomersList.First().customer_id },
                                 new { @class = "btn btn-info", @id = "customer-details-link" })
                             <button type="button" class="btn btn-info" onclick="navigate('customer', 1)">
-                                <i class="glyphicon glyphicon-chevron-right">></i>
+                                <i class="glyphicon glyphicon-chevron-right"></i>
                             </button>
                         </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="panel-footer">
+                    }
+                    else
+                    {
                         @Html.ActionLink("View All Customers", "Index", "Customers", null, new { @class = "btn btn-info btn-block" })
-                    </div>
-                }
+                    }
+                </div>
             </div>
         </div>
 
 
-        @*--- Products Panel (Fixed for permanent carousel display) ---*@
+        @*--- Products Panel (FIXED - Mapped) ---*@
         <div class="col-md-4">
             <div class="panel panel-warning dashboard-panel">
 
@@ -267,13 +287,7 @@
                     @if (Model.ProductsList != null && Model.ProductsList.Any())
                     {
                         <input type="hidden" id="product-index" value="0" />
-
                         <span id="product-count" style="display:none;">@(Model.ProductsList.Count())</span>
-
-                        <script>
-                            var staffIdMap = staffIdMap || {};
-                            staffIdMap['product'] = {};
-                        </script>
 
                         for (int i = 0; i < Model.ProductsList.Count(); i++)
                         {
@@ -282,24 +296,25 @@
                             var randomImageSuffix = (i % 2) + 1;
                             var imageUrl = Url.Content("~/Images/" + brandBaseName + randomImageSuffix + ".jpeg");
 
+                            @* CRITICAL FIX: Entity ID Mapping for jumpToId function (Previously Missing) *@
                             <script>
-                            staffIdMap['product'][@product.product_id] = @i;
+                                entityIdMap['product'] = entityIdMap['product'] || {};
+                                entityIdMap['product'][@product.product_id] = @i;
                             </script>
 
-                            @* CRITICAL FIX: The CSS is explicitly set to block ONLY for the first item (i == 0)
-                                to ensure single-item display (carousel behavior) at all times. *@
+                            @* Only show first item (i == 0), hide all others *@
                             <div class="detail-item product-item"
                                  id="product-@i"
                                  data-product-id="@product.product_id"
                                  data-brand="@product.brand_name"
                                  data-category="@product.category_name"
-                                 style="display: @(i == 0 ? "block" : "none");">
+                                 style="display:@(i == 0 ? "block" : "none")">
 
                                 <h4 class="text-center">@product.product_name</h4>
 
                                 <img src="@imageUrl"
                                      alt="Image of @product.product_name"
-                                     style=" align-content:center; max-height: 150px; width: auto; margin: 10px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" />
+                                     style="align-content:center; max-height: 150px; width: auto; margin: 10px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" />
 
                                 <p>Brand: @product.brand_name</p>
                                 <p>Category: @product.category_name</p>
@@ -311,31 +326,30 @@
                     }
                     else
                     {
-                        <p class="text-danger">No product records found.</p>
+                        <p class="text-danger">No product records found matching your filters.</p>
                     }
                 </div>
 
-
-                @if (Model.ProductsList != null && Model.ProductsList.Any())
-                {
-                    <div class="panel-footer product-navigator text-center">
-                        @* Navigation controls are always displayed if products exist *@
+                <div class="panel-footer product-navigator text-center">
+                    @if (Model.ProductsList != null && Model.ProductsList.Any())
+                    {
+                        @* Navigation controls *@
                         <div class="id-jump-container">
                             <div class="input-group input-group-sm mb-2 id-input-group">
                                 <input id="product-id-jump"
                                        type="number"
                                        class="panel-nav form-control text-center"
                                        min="1"
-                                       placeholder="1"
+                                       placeholder="@(Model.ProductsList.First().product_id)"
                                        onchange="jumpToId('product')"
                                        onkeypress="if(event.keyCode == 13) { jumpToId('product'); return false; }" />
-                                <p> /@(Model.ProductsList.Count())</p>
                             </div>
+                            <p> /@(Model.ProductsList.Count())</p>
                         </div>
 
                         <div class="btn-group btn-group-sm" role="group" style="margin-top: 5px;">
                             <button type="button" class="btn btn-info" onclick="navigate('product', -1)">
-                                <i class="glyphicon glyphicon-chevron-left"><</i>
+                                <i class="glyphicon glyphicon-chevron-left"></i>
                             </button>
 
                             @Html.ActionLink("View Details", "Details", "Products",
@@ -343,28 +357,44 @@
                                 new { @class = "btn btn-info", @id = "product-details-link" })
 
                             <button type="button" class="btn btn-info" onclick="navigate('product', 1)">
-                                <i class="glyphicon glyphicon-chevron-right">></i>
+                                <i class="glyphicon glyphicon-chevron-right"></i>
                             </button>
                         </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="panel-footer">
+                    }
+                    else
+                    {
                         @Html.ActionLink("View All Products", "Index", "Products", null, new { @class = "btn btn-info btn-block" })
-                    </div>
-                }
+                    }
+                </div>
             </div>
         </div>
     </div>
 
-    @*--- Modal Popups (Unchanged) ---*@
+    @*--- Modal Staff Popups ---*@
     <div class="modal fade" id="createStaffModal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Create New Staff Member</h4>
                 </div>
                 <div class="modal-body" id="staffModalBody">
+                    @* Partial view content will load here via AJAX *@
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @*--- Modal Customers Popups ---*@
+    <div class="modal fade" id="createCustomerModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Create New Customer</h4>
+                </div>
+                <div class="modal-body" id="customerModalBody">
+                    @* Partial view content will load here via AJAX *@
                 </div>
             </div>
         </div>
@@ -375,58 +405,6 @@
 
 @section Scripts {
     @Scripts.Render("~/bundles/jqueryval")
+    @* Include the external script file containing navigate() and jumpToId() *@
     <script src="@Url.Content("~/Scripts/_IndexScripts.js")"></script>
-    <script>
-    // ------------------------------------------------------------------
-    // Modal Popups (Unchanged)
-    // ------------------------------------------------------------------
-        $(function () {
-            // ⭐ 1. Load the Partial View when the button is clicked
-        $('#createStaffBtn').click(function () {
-            $.ajax({
-                url: '@Url.Action("CreatePartial", "Staffs")',
-                type: 'GET',
-                cache: false,
-                success: function (data) {
-                    $('#staffModalBody').html(data);
-                    $('#createStaffModal').modal('show');
-
-                    $.validator.unobtrusive.parse('#staffModalBody');
-                },
-                error: function () {
-                    alert("Could not load the creation form.");
-                }
-            });
-        });
-
-        // ⭐ 2. Handle the Form Submission via AJAX
-        $('#createStaffModal').on('submit', '#createStaffForm', function (e) {
-            e.preventDefault();
-
-            var form = $(this);
-            if (!form.valid()) {
-                return;
-            }
-
-            $.ajax({
-                url: form.attr('action'),
-                type: form.attr('method'),
-                data: form.serialize(),
-                success: function (result) {
-                    if (result.startsWith('<!DOCTYPE html>')) {
-                        window.location.href = '@Url.Action("Index", "Home")';
-                    } else {
-                        $('#staffModalBody').html(result);
-                        $.validator.unobtrusive.parse('#staffModalBody');
-                    }
-                },
-                error: function () {
-                    alert("An error occurred during staff creation.");
-                }
-            });
-        });
-
-    });
-
-    </script>
 }

@@ -1,25 +1,24 @@
-﻿// Helper function to consolidate link updating logic for View Details button
+﻿// ==================================================================================
+// _IndexScripts.js - Simplified & Fixed
+// ==================================================================================
+
+
+// ------------------------------------------------------------------
+// Helper function to update "View Details" link
+// ------------------------------------------------------------------
 function updateDetailsLink(type, dbId) {
     var $link = $('#' + type + '-details-link');
     if ($link.length > 0) {
         var currentHref = $link.attr('href');
-        var newHref;
-
-        // Logic to correctly replace/append the ID to the URL
-        if (/\/[0-9]+$/.test(currentHref)) {
-            // Replace existing ID at the end
-            newHref = currentHref.replace(/\/[0-9]+$/, '/' + dbId);
-        } else if (/\/Details$/.test(currentHref) || /\/Details\/$/.test(currentHref)) {
-            // Append ID after Details (handling trailing slashes)
-            newHref = currentHref.replace(/\/+$/, '') + '/' + dbId;
-        } else {
-            // General case (e.g., if there are query strings)
-            newHref = currentHref.split('?')[0].replace(/\/+$/, '') + '/' + dbId;
-        }
+        // Safely replace the ID part of the URL (assuming /Controller/Details/ID)
+        var newHref = currentHref.replace(/\/[0-9]+$/, '/' + dbId);
         $link.attr('href', newHref);
     }
 }
 
+// ------------------------------------------------------------------
+// Carousel Navigation Function (FIXED for Backward Wrapping)
+// ------------------------------------------------------------------
 function navigate(type, direction) {
     var indexInput = $('#' + type + '-index');
     var currentIdx = parseInt(indexInput.val());
@@ -30,111 +29,108 @@ function navigate(type, direction) {
 
     var newIdx = currentIdx + direction;
 
-    // 1. Minimum Boundary Check: Stop navigation at the first item (index 0)
-    if (direction === -1 && currentIdx === 0) {
-        return;
-    }
+    // --- Boundary and Wrapping Logic ---
 
-    // 2. Maximum Boundary Check (Wrapping): If newIdx exceeds the max index, wrap to 0.
+    // Case 1: Wrap forward (from last item to first)
     if (newIdx > lastIndex) {
         newIdx = 0;
     }
-
-    // Ensure the navigator is visible (in case a filter was applied and then reset)
-    $('.product-navigator').show();
+    // Case 2: Wrap backward (from first item to last)
+    else if (newIdx < 0) {
+        newIdx = lastIndex;
+    }
 
     // --- Navigation Execution ---
-
     $('#' + type + '-' + currentIdx).fadeOut(100, function () {
         var $newItem = $('#' + type + '-' + newIdx);
         $newItem.fadeIn(200);
 
         var dbId = $newItem.data(type + '-id');
 
-        // Update the input placeholder to show the current ID
+        // Update placeholder and clear input
         $('#' + type + '-id-jump').attr('placeholder', dbId);
-        $('#' + type + '-id-jump').val(''); // Clear input field
+        $('#' + type + '-id-jump').val('');
 
-        // Update the ActionLink's href (using the helper)
+        // Update the ActionLink
         updateDetailsLink(type, dbId);
     });
 
     indexInput.val(newIdx);
 }
 
-
+// ------------------------------------------------------------------
+// Jump to Specific ID Function (FIXED for Placeholder Usage and Map check)
+// ------------------------------------------------------------------
 function jumpToId(type) {
-    var inputId = $('#' + type + '-id-jump').val();
+    var $input = $('#' + type + '-id-jump');
+    var inputId = $input.val();
+    var idToJump;
 
-    if (!/^\d+$/.test(inputId)) {
-        alert("Please enter a valid ID number.");
-        $('#' + type + '-id-jump').val('');
+    // --- 1. Determine the ID to jump to ---
+    if (inputId === null || inputId.trim() === '') {
+        var currentPlaceholder = $input.attr('placeholder');
+
+        if (currentPlaceholder && /^\d+$/.test(currentPlaceholder)) {
+            idToJump = parseInt(currentPlaceholder);
+        } else {
+            alert("Please enter a valid ID number.");
+            $input.val('');
+            return;
+        }
+    } else {
+        if (!/^\d+$/.test(inputId)) {
+            alert("Please enter a valid ID number.");
+            $input.val('');
+            return;
+        }
+        idToJump = parseInt(inputId);
+    }
+
+    // --- 2. Perform Lookup and Validation ---
+    if (typeof entityIdMap == 'undefined' || !entityIdMap[type]) {
+        console.error("entityIdMap or the map for type '" + type + "' is not initialized.");
+        alert("Navigation map is not ready. Please refresh the page.");
+        $input.val('');
         return;
     }
 
-    var idToJump = parseInt(inputId);
-    // Accesses the globally populated map
-    // Note: The global map is called staffIdMap in the Razor code, 
-    // but its keys are 'staff', 'customer', 'product'.
-    var newIdx = staffIdMap[type][idToJump];
+    var newIdx = entityIdMap[type][idToJump];
 
     if (newIdx !== undefined) {
         var indexInput = $('#' + type + '-index');
         var currentIdx = parseInt(indexInput.val());
 
         if (newIdx === currentIdx) {
-            $('#' + type + '-id-jump').val('');
+            $input.val('');
             return;
         }
 
-        // Ensure the navigator is visible (in case a filter was applied and then reset)
-        $('.product-navigator').show();
-
+        // --- 3. Animation and Index Update ---
         $('#' + type + '-' + currentIdx).fadeOut(100, function () {
             var $newItem = $('#' + type + '-' + newIdx);
             $newItem.fadeIn(200);
 
             var dbId = $newItem.data(type + '-id');
 
-            // Set the new item's ID as the placeholder and clear the value
-            $('#' + type + '-id-jump').attr('placeholder', dbId);
-            $('#' + type + '-id-jump').val('');
+            $input.attr('placeholder', dbId);
+            $input.val('');
 
-            // Update the ActionLink's href (using the helper)
             updateDetailsLink(type, dbId);
         });
 
         indexInput.val(newIdx);
     } else {
-        alert(type.charAt(0).toUpperCase() + type.slice(1) + " ID " + idToJump + " not found.");
-        $('#' + type + '-id-jump').val('');
+        alert(type.charAt(0).toUpperCase() + type.slice(1) + " ID " + idToJump + " not found in the current list.");
+        $input.val('');
     }
 }
 
-
 // ------------------------------------------------------------------
-// Product Filtering Logic (UPDATED)
+// Document Ready - Initialization and Modal Logic
 // ------------------------------------------------------------------
-
-// Function to handle the text search submission
-function filterProductsBySearch() {
-    var type = 'product';
-    var searchTerm = $('#' + type + '-search-input').val().trim();
-
-    // 1. Set the search term into a hidden input field of the main form
-    //    (You'll need to add this hidden input to the Razor form above)
-    $('#search-term-input').val(searchTerm);
-
-    // 2. Submit the main filtering form (which contains all filters)
-    $('.product-filter-form').submit();
-}
-
-// ------------------------------------------------------------------
-// Initialization on Document Ready: Sets initial placeholder and link URL
-// ------------------------------------------------------------------
-
 $(document).ready(function () {
-    // Panels to initialize: staff, customer, product
+
+    // Initialize all three panels: set initial placeholder and details link
     ['staff', 'customer', 'product'].forEach(function (type) {
         var initialItem = $('#' + type + '-0');
 
@@ -143,43 +139,109 @@ $(document).ready(function () {
 
             if (initialId) {
                 $('#' + type + '-id-jump').attr('placeholder', initialId);
-                // Update the ActionLink's href (using the helper)
                 updateDetailsLink(type, initialId);
             }
         }
     });
 
-    // ADD EVENT HANDLERS FOR THE PRODUCT TEXT SEARCH
-    var $searchInput = $('#product-search-input');
-
-    // 1. Add a hidden input to the form to capture text search
-    // (This is often easier to put in the Razor view, but we'll inject it here for robust client-side handling)
-    $('.product-filter-form').append('<input type="hidden" name="searchTerm" id="search-term-input" value="@(ViewData["SearchTerm"])" />');
-
-    // 2. Clear the search term on any other filter change (Dropdowns)
+    // Product Filter: Submit form on dropdown change
     $('#brand-filter, #category-filter').on('change', function () {
-        $searchInput.val('');
+        $('.product-filter-form').submit();
     });
 
-    // 3. Update text search input to submit the form on Enter key press
-    $searchInput.on('keypress', function (e) {
-        if (e.which === 13) {
-            e.preventDefault(); // Prevent default form submission if outside the form
-            filterProductsBySearch();
-        }
+    // --- Modal Popups for Staff Creation ---
+    $('#createStaffBtn').click(function () {
+        $.ajax({
+            url: '/Staffs/CreatePartial', // Use relative path
+            type: 'GET',
+            cache: false,
+            success: function (data) {
+                $('#staffModalBody').html(data);
+                $('#createStaffModal').modal('show');
+                $.validator.unobtrusive.parse('#staffModalBody');
+            }
+        });
     });
 
-    // Handle initial state: if a filter is applied, hide the navigator
-    if ($('#brand-filter').val() !== '' || $('#category-filter').val() !== '' || $searchInput.val() !== '') {
-        $('.product-navigator').hide();
+    $(document).on('submit', '#createStaffForm', function (e) {
+        e.preventDefault();
+        var form = $(this);
+        if (!form.valid()) return false;
 
-        // Hide all items and show them *all* when filters are applied
-        // This is necessary because the default Razor logic only shows product-0
-        $('.product-item').show();
+        $.ajax({
+            url: form.attr('action'),
+            type: form.attr('method'),
+            data: form.serialize(),
+            dataType: 'json',
+            success: function (result) {
+                if (result.success) {
+                    $('#createStaffModal').modal('hide');
+                    window.location.href = result.redirectUrl;
+                } else {
+                    alert('An error occurred. Please try again.');
+                }
+            },
+            error: function (xhr) {
+                if (xhr.status === 200 && xhr.responseText.indexOf('form-group') > -1) {
+                    $('#staffModalBody').html(xhr.responseText);
+                    $.validator.unobtrusive.parse('#staffModalBody');
+                } else {
+                    alert("An error occurred during staff creation.");
+                }
+            }
+        });
+        return false;
+    });
 
-    } else {
-        $('.product-navigator').show();
-        $('.product-item').hide(); // Hide all but the first item if no filters are active
-        $('#product-0').show(); // Show the first item if no filters are active (default view)
-    }
+    $('#createStaffModal').on('hidden.bs.modal', function () {
+        $('#staffModalBody').empty();
+    });
+
+    // --- Modal Popups for Customer Creation ---
+    $('#createCustomerBtn').click(function () {
+        $.ajax({
+            url: '/Customers/CreatePartial', // Use relative path
+            type: 'GET',
+            cache: false,
+            success: function (data) {
+                $('#customerModalBody').html(data);
+                $('#createCustomerModal').modal('show');
+                $.validator.unobtrusive.parse('#customerModalBody');
+            }
+        });
+    });
+
+    $(document).on('submit', '#createCustomerForm', function (e) {
+        e.preventDefault();
+        var form = $(this);
+        if (!form.valid()) return false;
+
+        $.ajax({
+            url: form.attr('action'),
+            type: form.attr('method'),
+            data: form.serialize(),
+            dataType: 'json',
+            success: function (result) {
+                if (result.success) {
+                    $('#createCustomerModal').modal('hide');
+                    window.location.href = result.redirectUrl;
+                } else {
+                    alert('An error occurred. Please try again.');
+                }
+            },
+            error: function (xhr) {
+                if (xhr.status === 200 && xhr.responseText.indexOf('form-group') > -1) {
+                    $('#customerModalBody').html(xhr.responseText);
+                    $.validator.unobtrusive.parse('#customerModalBody');
+                } else {
+                    alert("An error occurred during customer creation.");
+                }
+            }
+        });
+        return false;
+    });
+
+    $('#createCustomerModal').on('hidden.bs.modal', function () {
+        $('#customerModalBody').empty();
+    });
 });

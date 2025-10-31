@@ -16,6 +16,8 @@ namespace u24637646_HW03.Controllers
     {
         private BikeStoresEntities db = new BikeStoresEntities();
 
+
+
         // Display (Index) action using CustomerViewModel
         public async Task<ActionResult> Index()
         {
@@ -70,6 +72,41 @@ namespace u24637646_HW03.Controllers
             }
             return View(customerVM);
         }
+
+        // GET: customers/CreatePartial
+        [HttpGet]
+        public ActionResult CreatePartial()
+        {
+            // Pass a new, empty model to the partial view
+            return PartialView("_CreatePartial", new customers());
+        }
+
+        // POST: customers/CreatePartial (The Partial View form is submitted to this action)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        // Note: You must bind to the EF Model 'customers', not the ViewModel
+        public async Task<ActionResult> CreatePartial(customers customer)
+        {
+            if (ModelState.IsValid)
+            {
+                // 1. Save to Database
+                db.customers.Add(customer);
+                await db.SaveChangesAsync();
+
+                // 2. Set Success Message for the next page load
+                TempData["SuccessMessage"] = $"Customer **{customer.first_name} {customer.last_name}** created successfully!";
+
+                // 3. **Return JSON on Success**
+                // The JavaScript expects `{ success: true, redirectUrl: ... }`
+                return Json(new { success = true, redirectUrl = Url.Action("Index", "Home") });
+            }
+
+            // If validation fails (ModelState is NOT valid)
+            // 4. **Return the Partial View HTML with Validation Errors**
+            Response.StatusCode = 200; // Important: Forces jQuery to process the response body
+            return PartialView("_CreatePartial", customer);
+        }
+
 
         // GET: customers/Create
         public ActionResult Create()

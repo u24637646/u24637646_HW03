@@ -309,3 +309,35 @@ textarea {
     }
 }
 
+/* Custom Styles for Dashboard Panels */
+
+.id-jump-container {
+    /* FIX: This ensures the input and count text display horizontally */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+    .id-jump-container .id-input-group {
+        /* Adjust width for the ID input box */
+        width: 80px;
+        margin-right: 5px;
+    }
+
+    .id-jump-container p {
+        /* Adjust text alignment next to the input */
+        margin: 0;
+        font-weight: bold;
+    }
+
+/* Optional general panel styles */
+.dashboard-panel {
+    min-height: 550px; /* Ensures consistent panel height */
+}
+
+.panel-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
