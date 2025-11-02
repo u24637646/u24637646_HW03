@@ -4,47 +4,31 @@
     ViewBag.Title = "Home";
 }
 
-<style>
-    /* * Essential CSS for the ID jump container.
-     * Ideally, this would be in a separate CSS file, but it's kept here for completeness if you don't have a linked site.css.
-     */
-    .id-jump-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 10px;
-    }
+<head>
+    <link rel="stylesheet" href="~/Content/_HomeStyles.css" />
 
-        .id-jump-container .id-input-group {
-            width: 80px;
-            margin-right: 5px;
-        }
-
-        .id-jump-container p {
-            margin: 0;
-            font-weight: bold;
-        }
-</style>
-
-<div class="text-center">
-    <h1>Bike Stores Dashboard</h1>
-</div>
-
-@* Success Message Display (using TempData set in the controller) *@
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible" role="alert">
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        @Html.Raw(TempData["SuccessMessage"])
-    </div>
-}
+</head>
 
 <div class="body">
+
+    <header>
+        <h1>Bike Stores Dashboard</h1>
+    </header>
+
+    @* Success Message Display (using TempData set in the controller) *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            @Html.Raw(TempData["SuccessMessage"])
+        </div>
+    }
 
     @* === START PRODUCT FILTER FORM === *@
     @using (Html.BeginForm("Index", "Home", FormMethod.Get, new { @class = "product-filter-form" }))
     {
-        <div class="product-filters" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
+        @* INLINE STYLE MOVED TO CSS CLASS .product-filters *@
+        <div class="product-filters">
 
             @{
                 // Get the lists and selected values from ViewData (Set by the Controller)
@@ -56,7 +40,8 @@
             }
 
             @* --- Brand Dropdown --- *@
-            <select id="brand-filter" name="selectedBrand" class="form-control" style="flex: 1 1 30%; min-width: 100px;">
+            @* INLINE STYLE MOVED TO CSS ID #brand-filter *@
+            <select id="brand-filter" name="selectedBrand" class="form-control">
                 <option value="" @(string.IsNullOrEmpty(selectedBrand) ? "selected" : "")>All Brands</option>
                 @foreach (var brand in allBrands)
                 {
@@ -65,7 +50,8 @@
             </select>
 
             @* --- Category Dropdown --- *@
-            <select id="category-filter" name="selectedCategory" class="form-control" style="flex: 1 1 30%; min-width: 100px;">
+            @* INLINE STYLE MOVED TO CSS ID #category-filter *@
+            <select id="category-filter" name="selectedCategory" class="form-control">
                 <option value="" @(string.IsNullOrEmpty(selectedCategory) ? "selected" : "")>All Categories</option>
                 @foreach (var category in allCategories)
                 {
@@ -73,7 +59,8 @@
                 }
             </select>
 
-            <div style="flex: 1 1 10%; min-width: 80px; text-align: center;">
+            @* INLINE STYLE MOVED TO CSS SELECTOR .product-filters > div:nth-child(3) *@
+            <div>
                 <a href="@Url.Action("Index", "Home")" class="btn btn-default btn-sm btn-block">Reset Filter</a>
             </div>
         </div>
@@ -83,9 +70,10 @@
 
     <script>
         var entityIdMap = entityIdMap || {};
-    </script> 
+    </script>
 
-    <div class="row" style="margin-top: 20px;">
+    @* INLINE STYLE MOVED TO CSS CLASS .dashboard-row *@
+    <div class="row dashboard-row">
         @*--- Staff Panel ---*@
         <div class="col-md-4">
             <div class="panel panel-success dashboard-panel">
@@ -99,18 +87,20 @@
                     @if (Model.StaffsList != null && Model.StaffsList.Any())
                     {
                         <input type="hidden" id="staff-index" value="0" />
-                        <span id="staff-count" style="display:none;">@(Model.StaffsList.Count())</span>
+                        @* INLINE STYLE MOVED TO CSS CLASS .entity-count *@
+                        <span id="staff-count" class="entity-count">@(Model.StaffsList.Count())</span>
 
                         for (int i = 0; i < Model.StaffsList.Count(); i++)
                         {
                             var staff = Model.StaffsList.ElementAt(i);
 
-                            @* CRITICAL: Entity ID Mapping for jumpToId function *@
+                            @* CRITICAL: Entity ID Mapping for jumpToId function (Must remain) *@
                             <script>
                                 entityIdMap['staff'] = entityIdMap['staff'] || {};
                                 entityIdMap['staff'][@staff.staff_id] = @i;
                             </script>
 
+                            @* DISPLAY LOGIC MUST REMAIN IN RAZOR *@
                             <div class="detail-item staff-item" id="staff-@i" data-staff-id="@staff.staff_id" style="display: @(i == 0 ? "block" : "none");">
                                 <h4 class="text-center">@staff.first_name @staff.last_name</h4>
                                 <p>Email: @staff.email</p>
@@ -145,7 +135,7 @@
                         <p class="text-danger">No staff records found.</p>
                     }
                 </div>
-                <div class="panel-footer staff-navigator text-center">
+                <div class="panel-footer staff-navigator panel-navigator text-center">
                     @if (Model.StaffsList != null && Model.StaffsList.Any())
                     {
                         <div class="id-jump-container">
@@ -160,7 +150,8 @@
                             </div>
                             <p> /@(Model.StaffsList.Count())</p>
                         </div>
-                        <div class="btn-group btn-group-sm" role="group" style="margin-top: 5px;">
+                        @* INLINE STYLE MOVED TO CSS SELECTOR .panel-navigator .btn-group *@
+                        <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-info" onclick="navigate('staff', -1)">
                                 <i class="glyphicon glyphicon-chevron-left"></i>
                             </button>
@@ -193,18 +184,20 @@
                     @if (Model.CustomersList != null && Model.CustomersList.Any())
                     {
                         <input type="hidden" id="customer-index" value="0" />
-                        <span id="customer-count" style="display:none;">@(Model.CustomersList.Count())</span>
+                        @* INLINE STYLE MOVED TO CSS CLASS .entity-count *@
+                        <span id="customer-count" class="entity-count">@(Model.CustomersList.Count())</span>
 
                         for (int i = 0; i < Model.CustomersList.Count(); i++)
                         {
                             var customer = Model.CustomersList.ElementAt(i);
 
-                            @* CRITICAL: Entity ID Mapping for jumpToId function *@
+                            @* CRITICAL: Entity ID Mapping for jumpToId function (Must remain) *@
                             <script>
                                 entityIdMap['customer'] = entityIdMap['customer'] || {};
                                 entityIdMap['customer'][@customer.customer_id] = @i;
                             </script>
 
+                            @* DISPLAY LOGIC MUST REMAIN IN RAZOR *@
                             <div class="detail-item customer-item" id="customer-@i" data-customer-id="@customer.customer_id" style="display: @(i == 0 ? "block" : "none");">
                                 <h4 class="text-center"> @customer.first_name @customer.last_name</h4>
                                 <p>Email: @customer.email</p>
@@ -239,7 +232,7 @@
                         <p class="text-danger">No customer records found.</p>
                     }
                 </div>
-                <div class="panel-footer customer-navigator text-center">
+                <div class="panel-footer customer-navigator panel-navigator text-center">
                     @if (Model.CustomersList != null && Model.CustomersList.Any())
                     {
                         <div class="id-jump-container">
@@ -254,7 +247,8 @@
                             </div>
                             <p> /@(Model.CustomersList.Count())</p>
                         </div>
-                        <div class="btn-group btn-group-sm" role="group" style="margin-top: 5px;">
+                        @* INLINE STYLE MOVED TO CSS SELECTOR .panel-navigator .btn-group *@
+                        <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-info" onclick="navigate('customer', -1)">
                                 <i class="glyphicon glyphicon-chevron-left"></i>
                             </button>
@@ -287,7 +281,8 @@
                     @if (Model.ProductsList != null && Model.ProductsList.Any())
                     {
                         <input type="hidden" id="product-index" value="0" />
-                        <span id="product-count" style="display:none;">@(Model.ProductsList.Count())</span>
+                        @* INLINE STYLE MOVED TO CSS CLASS .entity-count *@
+                        <span id="product-count" class="entity-count">@(Model.ProductsList.Count())</span>
 
                         for (int i = 0; i < Model.ProductsList.Count(); i++)
                         {
@@ -296,13 +291,13 @@
                             var randomImageSuffix = (i % 2) + 1;
                             var imageUrl = Url.Content("~/Images/" + brandBaseName + randomImageSuffix + ".jpeg");
 
-                            @* CRITICAL FIX: Entity ID Mapping for jumpToId function (Previously Missing) *@
+                            @* CRITICAL FIX: Entity ID Mapping for jumpToId function (Must remain) *@
                             <script>
                                 entityIdMap['product'] = entityIdMap['product'] || {};
                                 entityIdMap['product'][@product.product_id] = @i;
                             </script>
 
-                            @* Only show first item (i == 0), hide all others *@
+                            @* DISPLAY LOGIC MUST REMAIN IN RAZOR *@
                             <div class="detail-item product-item"
                                  id="product-@i"
                                  data-product-id="@product.product_id"
@@ -312,9 +307,9 @@
 
                                 <h4 class="text-center">@product.product_name</h4>
 
+                                @* INLINE STYLE MOVED TO CSS SELECTOR .product-item img *@
                                 <img src="@imageUrl"
-                                     alt="Image of @product.product_name"
-                                     style="align-content:center; max-height: 150px; width: auto; margin: 10px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" />
+                                     alt="Image of @product.product_name" />
 
                                 <p>Brand: @product.brand_name</p>
                                 <p>Category: @product.category_name</p>
@@ -330,7 +325,7 @@
                     }
                 </div>
 
-                <div class="panel-footer product-navigator text-center">
+                <div class="panel-footer product-navigator panel-navigator text-center">
                     @if (Model.ProductsList != null && Model.ProductsList.Any())
                     {
                         @* Navigation controls *@
@@ -347,7 +342,8 @@
                             <p> /@(Model.ProductsList.Count())</p>
                         </div>
 
-                        <div class="btn-group btn-group-sm" role="group" style="margin-top: 5px;">
+                        @* INLINE STYLE MOVED TO CSS SELECTOR .panel-navigator .btn-group *@
+                        <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-info" onclick="navigate('product', -1)">
                                 <i class="glyphicon glyphicon-chevron-left"></i>
                             </button>

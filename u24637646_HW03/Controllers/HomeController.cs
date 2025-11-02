@@ -6,16 +6,42 @@ using System.Web.Mvc;
 using u24637646_HW03.Models;
 using u24637646_HW03.ViewModels;
 using System.Threading.Tasks;
+using System.IO;
+using System.Text;
+using Newtonsoft.Json;
+
+// --- ARCHIVE MANAGEMENT CLASSES ---
+// Placeholder class for Archiving (simulate database table/storage)
+public class ArchivedReport
+{
+    public string Filename { get; set; }
+    public string Filetype { get; set; }
+    public DateTime DateSaved { get; set; }
+    public string Description { get; set; } // Stores HTML content from TinyMCE
+}
+
+// Static list to simulate persistent storage for archived reports
+public static class ReportArchive
+{
+    public static List<ArchivedReport> Reports = new List<ArchivedReport>
+    {
+        // Example initial data
+        new ArchivedReport { Filename = "Initial_Trend_Report.pdf", Filetype = "PDF", DateSaved = DateTime.Now.AddDays(-5), Description = "<em>Monthly Order Trend</em> chart saved at startup." },
+        new ArchivedReport { Filename = "Q1_Sales_Distribution.pdf", Filetype = "PDF", DateSaved = DateTime.Now.AddDays(-2), Description = "Sales data by store for <strong>Q1</strong>." }
+    };
+}
+
 
 namespace u24637646_HW03.Controllers
 {
     public class HomeController : Controller
     {
+        // NOTE: Ensure your BikeStoresEntities context is correctly set up
         private BikeStoresEntities db = new BikeStoresEntities();
 
+        // --- EXISTING INDEX ACTION (Unchanged) ---
         public async Task<ActionResult> Index(int? staffId, string selectedBrand, string selectedCategory)
         {
-
             // --- 1. Define Base Queries (Staffs, Customers, Products) ---
 
             var staffQuery = db.staffs.Include(s => s.stores).Include(s => s.staffs2)
@@ -64,15 +90,10 @@ namespace u24637646_HW03.Controllers
             ViewData["AllCategories"] = completeProductList.Select(p => p.category_name).Distinct().OrderBy(c => c).ToList();
 
             // --- 2. Apply Filtering Logic ---
+            bool isFiltered = !string.IsNullOrEmpty(selectedBrand) || !string.IsNullOrEmpty(selectedCategory);
 
-            // Check if ANY filter parameter was provided
-            bool isFiltered = !string.IsNullOrEmpty(selectedBrand) ||
-                             !string.IsNullOrEmpty(selectedCategory);
-
-            // Start filtering the complete list
             IEnumerable<ProductViewModel> filteredProducts = completeProductList;
 
-            // Apply filters and persist selection in ViewData
             if (!string.IsNullOrEmpty(selectedBrand))
             {
                 filteredProducts = filteredProducts.Where(p => p.brand_name == selectedBrand);
@@ -85,7 +106,6 @@ namespace u24637646_HW03.Controllers
                 ViewData["SelectedCategory"] = selectedCategory;
             }
 
-            // Pass the filter state to the view (used for showing the status message, NOT for display logic)
             ViewData["IsFiltered"] = isFiltered;
 
             // --- 3. Sales Queries (Unchanged) ---
@@ -122,8 +142,7 @@ namespace u24637646_HW03.Controllers
             {
                 StaffsList = await staffQuery.ToListAsync(),
                 CustomersList = await customersQuery.ToListAsync(),
-                ProductsList = filteredProducts.ToList(), // Send the full filtered list
-
+                ProductsList = filteredProducts.ToList(),
                 StaffSalesList = await staffSalesQuery.ToListAsync(),
                 CustomerPurchasesList = await customerPurchasesQuery.ToListAsync(),
 
@@ -145,9 +164,157 @@ namespace u24637646_HW03.Controllers
             return View(viewModel);
         }
 
-        public ActionResult Reports()
+        // --- REPORTS ACTION ---
+        public async Task<ActionResult> Reports()
         {
+            var jsonSetting = new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore };
+
+            // --- 1. Doughnut Chart Data Preparation (Sales by Store) ---
+            var rawStoreSales = await db.order_items
+                .Include(oi => oi.orders.stores)
+                .Where(oi => oi.orders != null && oi.orders.stores != null)
+                .Select(oi => new
+                {
+                    Store = oi.orders.stores.store_name,
+                    oi.list_price,
+                    oi.quantity,
+                    oi.discount
+                })
+                .Where(raw => raw.Store != null)
+                .ToListAsync();
+
+            var storeSales = rawStoreSales
+                .GroupBy(raw => raw.Store)
+                .Select(g => new
+                {
+                    Store = g.Key,
+                    TotalSales = g.Sum(oi => oi.list_price * oi.quantity * (1 - (decimal)oi.discount))
+                })
+                .Where(c => c.TotalSales > 0)
+                .ToList();
+
+            ViewBag.DoughnutLabels = JsonConvert.SerializeObject(storeSales.Select(c => c.Store).ToList(), jsonSetting);
+            ViewBag.DoughnutData = JsonConvert.SerializeObject(storeSales.Select(c => c.TotalSales).ToList(), jsonSetting);
+
+
+            // --- 2. Line Chart Data Preparation (Monthly Order Trend) ---
+
+            var rawMonthlyOrders = await db.orders
+                .GroupBy(o => new { o.order_date.Year, o.order_date.Month })
+                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+                .Select(g => new
+                {
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    OrderCount = g.Count()
+                })
+                .ToListAsync();
+
+            var monthlyOrders = rawMonthlyOrders
+                .Select(item => new
+                {
+                    OrderDate = new DateTime(item.Year, item.Month, 1),
+                    item.OrderCount
+                })
+                .ToList();
+
+            ViewBag.LineLabels = JsonConvert.SerializeObject(monthlyOrders.Select(m => m.OrderDate.ToString("MMM yyyy")).ToList(), jsonSetting);
+            ViewBag.LineData = JsonConvert.SerializeObject(monthlyOrders.Select(m => m.OrderCount).ToList(), jsonSetting);
+
+            // Add the list of archived reports to the ViewBag
+            ViewBag.ArchivedReports = ReportArchive.Reports.OrderByDescending(r => r.DateSaved).ToList();
+
             return View();
+        }
+
+        // --- ARCHIVE ACTIONS ---
+
+        // NEW: Action to handle saving an individual chart report (PDF ONLY) with Rich Text Description
+        [HttpPost]
+        [ValidateInput(false)] // REQUIRED to accept HTML content from TinyMCE
+        public ActionResult SaveChartReport(string Filename, string Filetype, string ChartName, string Description)
+        {
+            // Basic validation
+            if (string.IsNullOrWhiteSpace(Filename))
+            {
+                TempData["Message"] = "Error: Filename is required.";
+                return RedirectToAction("Reports");
+            }
+
+            // Sanitize filename and construct full name (Filetype is forced to PDF)
+            string safeFilename = Path.GetInvalidFileNameChars().Aggregate(Filename, (current, c) => current.Replace(c.ToString(), "_"));
+            string fullFilename = $"{safeFilename}_{ChartName.Replace(" ", "")}.pdf";
+
+            var newReport = new ArchivedReport
+            {
+                Filename = fullFilename,
+                Filetype = "PDF", // Fixed requirement
+                DateSaved = DateTime.Now,
+                // Use the description submitted from the rich text box
+                Description = Description ?? $"**{ChartName}** chart saved in PDF format."
+            };
+
+            // Add to the static archive list
+            ReportArchive.Reports.Add(newReport);
+            TempData["Message"] = $"Chart Report '{newReport.Filename}' saved successfully!";
+
+            return RedirectToAction("Reports");
+        }
+
+        // UPDATED: Action to handle updating the description via the modal (Rich Text Box)
+        [HttpPost]
+        [ValidateInput(false)] // REQUIRED to accept HTML content from TinyMCE
+        public ActionResult UpdateReportDescription(string filename, string Description)
+        {
+            var reportToUpdate = ReportArchive.Reports.FirstOrDefault(r => r.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase));
+
+            if (reportToUpdate != null)
+            {
+                reportToUpdate.Description = Description;
+                TempData["Message"] = $"Description for '{filename}' updated successfully.";
+            }
+            else
+            {
+                TempData["Message"] = $"Error: Report '{filename}' not found for update.";
+            }
+
+            return RedirectToAction("Reports");
+        }
+
+        // Action to handle downloading a report (PDF only expected)
+        public FileResult DownloadReport(string filename, string filetype)
+        {
+            if (!filetype.Equals("PDF", StringComparison.OrdinalIgnoreCase))
+            {
+                return File(Encoding.UTF8.GetBytes("File type not supported for download."), "text/plain", "Error.txt");
+            }
+
+            // Simulated content - Replace this section with actual PDF generation code
+            string content = $"Simulated PDF content for: {filename}\nGenerated on: {DateTime.Now}";
+            byte[] fileBytes = Encoding.UTF8.GetBytes(content);
+
+            string contentType = "application/pdf";
+
+            return File(fileBytes, contentType, filename);
+        }
+
+        // Action to handle deleting a report
+        [HttpPost]
+        public ActionResult DeleteReport(string filename)
+        {
+            var reportToDelete = ReportArchive.Reports.FirstOrDefault(r => r.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase));
+
+            if (reportToDelete != null)
+            {
+                ReportArchive.Reports.Remove(reportToDelete);
+                TempData["Message"] = $"Report '{filename}' deleted successfully.";
+            }
+            else
+            {
+                TempData["Message"] = $"Error: Report '{filename}' not found.";
+            }
+
+            return RedirectToAction("Reports");
         }
 
         public ActionResult Maintain()

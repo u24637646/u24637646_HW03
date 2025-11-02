@@ -25,6 +25,7 @@ namespace u24637646_HW03
             bundles.Add(new StyleBundle("~/Content/css").Include(
                       "~/Content/bootstrap.css",
                       "~/Content/site.css"));
+    
         }
     }
 }

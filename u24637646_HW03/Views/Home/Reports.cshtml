@@ -1,7 +1,231 @@
-﻿
-@{
+﻿@{
     ViewBag.Title = "Reports";
 }
 
-<h2>Reports</h2>
+<head>
+    <link rel="stylesheet" href="~/Content/_ReportingStyles.css" />
+    <script src="https://cdn.tiny.cloud/1/ong4t6vwwpwhnn99x0emgdt7be7w0gn7dek4dil4h7xrps0itinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+</head>
 
+<body>
+
+    <header class="header">
+        <h1>Bike Stores Reporting</h1>
+        <div class="sub-heading">
+            @DateTime.Now.Date.ToString("MMMM dd, yyyy")
+        </div>
+    </header>
+
+
+    <div class="dashboard-container">
+
+        <div class="card">
+
+            <div class="card-header">
+                <h1 class="card-title">Monthly Order Trend</h1>
+                <p class="sub-heading">Line Chart</p>
+            </div>
+
+            <div class="chart-canvas-container">
+                <canvas id="monthlyLineChart"></canvas>
+            </div>
+
+            <div style="text-align: center; padding-top: 10px; padding-bottom: 10px;">
+                <button id="StartLineChartButton" class="btn btn-success" type="button">Start Live Chart</button>
+                <button id="StopLineChartButton" class="btn btn-danger" type="button">Stop Live Chart</button>
+
+                <hr style="margin-top: 15px;" />
+
+                @using (Html.BeginForm("SaveChartReport", "Home", FormMethod.Post, new { @class = "p-3 border rounded mx-auto", style = "max-width: 450px; text-align: left;" }))
+                {
+                    @Html.Hidden("ChartName", "Monthly Order Trend")
+                    @Html.Hidden("Filetype", "PDF")
+
+                    <label for="lineChartFilename" class="form-label">File Name:</label>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="lineChartFilename" name="Filename" required placeholder="e.g., Monthly_Orders_Q3" />
+                        <span class="input-group-text">.PDF</span>
+                    </div>
+
+                    <label for="lineChartDescription" class="form-label">Description (Rich Text):</label>
+                    <textarea id="lineChartDescription" name="Description" class="form-control mb-3"></textarea>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-secondary">Save Monthly Order Trend Chart</button>
+                    </div>
+                }
+            </div>
+
+        </div>
+
+        <div class="card">
+
+            <div class="card-header">
+                <h1 class="card-title">Sales Revenue Distribution</h1>
+                <p class="sub-heading">Doughnut Chart</p>
+            </div>
+
+            <div class="chart-canvas-container">
+                <canvas id="categoryDoughnutChart"></canvas>
+            </div>
+
+            <p class="chart-instruction">
+                💡 Tip: Click on any store name in the legend above to temporarily hide/show that store's sales and compare the remaining totals.
+            </p>
+
+            <div style="text-align: center; padding-top: 10px; padding-bottom: 10px;">
+                @using (Html.BeginForm("SaveChartReport", "Home", FormMethod.Post, new { @class = "p-3 border rounded mx-auto", style = "max-width: 450px; text-align: left;" }))
+                {
+                    @Html.Hidden("ChartName", "Sales Revenue Distribution")
+                    @Html.Hidden("Filetype", "PDF")
+
+                    <label for="doughnutChartFilename" class="form-label">File Name:</label>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="doughnutChartFilename" name="Filename" required placeholder="e.g., Store_Sales_Distribution" />
+                        <span class="input-group-text">.PDF</span>
+                    </div>
+
+                    <label for="doughnutChartDescription" class="form-label">Description (Rich Text):</label>
+                    <textarea id="doughnutChartDescription" name="Description" class="form-control mb-3"></textarea>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-secondary">Save Sales Revenue Distribution Chart</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="archives-container">
+        <div class="card">
+
+            <div class="card-header">
+                <h1 class="card-title">Document Archive</h1>
+                <p class="sub-heading">Manage your saved chart reports</p>
+            </div>
+
+            <div class="card-body">
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Chart Type</th>
+                            <th>Date Saved</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (ViewBag.ArchivedReports != null)
+                        {
+                            foreach (var report in ViewBag.ArchivedReports)
+                            {
+                                <tr>
+                                    <td>@report.Filename</td>
+                                    <td>@report.Filetype</td>
+                                    <td>@report.DateSaved.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>@Html.Raw(report.Description)</td>
+                                    <td>
+                                        <a href="@Url.Action("DownloadReport", "Home", new { filename = report.Filename, filetype = report.Filetype })" class="btn btn-sm btn-info me-2">Download</a>
+
+                                        <button type="button" class="btn btn-sm btn-warning me-2 edit-description-btn"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#descriptionModal"
+                                                data-filename="@report.Filename"
+                                                data-description='@report.Description'>
+                                            Edit Description
+                                        </button>
+
+                                        @using (Html.BeginForm("DeleteReport", "Home", FormMethod.Post, new { style = "display:inline;" }))
+                                        {
+                                            @Html.Hidden("filename", (string)report.Filename)
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this file?');">Delete</button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="5">No reports archived yet.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+
+<div class="modal fade" id="descriptionModal" tabindex="-1" aria-labelledby="descriptionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            @using (Html.BeginForm("UpdateReportDescription", "Home", FormMethod.Post))
+            {
+                <div class="modal-header">
+                    <h5 class="modal-title" id="descriptionModalLabel">Edit Description for: <span id="modal-filename"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    @Html.Hidden("filename", "", new { id = "modal-hidden-filename" })
+
+                    <label for="reportDescriptionModal">Description:</label>
+                    <textarea id="reportDescriptionModal" name="Description" class="form-control"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    <script>
+        // Define global variables to hold the JSON data
+        window.lineLabels = @Html.Raw(ViewBag.LineLabels);
+        window.lineData = @Html.Raw(ViewBag.LineData);
+        window.DoughnutLabels = @Html.Raw(ViewBag.DoughnutLabels);
+        window.DoughnutData = @Html.Raw(ViewBag.DoughnutData);
+    </script>
+
+    <script src="~/Scripts/_ReportingScripts.js"></script>
+
+    <script>
+        // 1. Initialize TinyMCE for ALL THREE textareas
+        tinymce.init({
+            // Target all three unique IDs: the two save forms and the one modal
+            selector: '#lineChartDescription, #doughnutChartDescription, #reportDescriptionModal',
+            plugins: 'autoresize link image lists',
+            toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image',
+            menubar: false,
+            // Autoresize settings for the resizable rich text box
+            autoresize_bottom_margin: 16,
+            min_height: 150,
+            max_height: 500,
+        });
+
+        // 2. jQuery/JavaScript logic to populate the modal on button click (UNCHANGED)
+        $(document).ready(function () {
+            $('#descriptionModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget);
+                var filename = button.data('filename');
+                var description = button.data('description');
+
+                var modal = $(this);
+                modal.find('#modal-filename').text(filename);
+                modal.find('#modal-hidden-filename').val(filename);
+
+                setTimeout(() => {
+                    if (tinymce.get('reportDescriptionModal')) {
+                        tinymce.get('reportDescriptionModal').setContent(description);
+                    }
+                }, 100);
+            });
+        });
+    </script>
+}

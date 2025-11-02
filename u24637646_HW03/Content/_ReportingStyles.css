@@ -1,0 +1,132 @@
+﻿/* ========================================
+        1. COLOR PALETTE & TYPOGRAPHY (Minimalist Style)
+        ========================================
+        */
+:root {
+    /* Professional Blue/Teal Palette for Data-Driven Focus */
+    --color-primary: #1E90FF; /* Dodger Blue - Main accent for charts/buttons */
+    --color-secondary: #20B2AA; /* Light Sea Green - Secondary accent (e.g., profit line) */
+    --color-background: #F4F7F9; /* Very Light Gray - Clean, neutral background */
+    --color-card-bg: #FFFFFF; /* Pure White - Card background for contrast */
+    --color-text-dark: #333333; /* Dark Gray - Primary text */
+    --color-text-light: #6c757d; /* Muted Gray - Subtitles/Context */
+    --color-shadow: rgba(0, 0, 0, 0.05); /* Subtle shadow for depth */
+    --font-family: 'Roboto', sans-serif;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--color-background);
+    color: var(--color-text-dark);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+/* ========================================
+        2. HEADER & NAVIGATION
+        ========================================
+        */
+.header {
+    background-color: var(--color-card-bg);
+    padding: 20px 40px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+    .header h1 {
+        margin: 0;
+        font-size: 1.8em;
+        font-weight: 700;
+    }
+
+.sub-heading {
+    font-size: 0.9em;
+    font-weight: 400;
+    color: var(--color-text-light);
+}
+
+/* ========================================
+        3. GRID LAYOUT & CARD STYLES
+        ========================================
+        */
+.dashboard-container {
+    padding: 30px 40px;
+    /* 3-column grid layout for desktop */
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 25px; /* Ample spacing (Whitespace) */
+}
+
+.archives-container {
+    margin-left: -40px;
+    margin-right: -40px;
+    width: auto; /* Or 100vw if you want full viewport width */
+    padding: 20px 40px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card {
+    background-color: var(--color-card-bg);
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px var(--color-shadow); /* Subtle shadow */
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between; /* Puts title on left, subheading on right */
+    align-items: center; /* Centers them vertically */
+    margin-bottom: 15px; /* Spacing below the header */
+    border-bottom: 2px solid #f0f0f0; /* The dividing line */
+    padding-bottom: 8px;
+}
+
+.card-title {
+    font-size: 1.2em;
+    font-weight: 500;
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 1200px) {
+    .dashboard-container {
+        grid-template-columns: 1fr 1fr; /* Two columns on smaller screens */
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        grid-template-columns: 1fr; /* Single column on mobile */
+        padding: 20px;
+    }
+
+    .card {
+        grid-column: 1 / 2 !important; /* All cards take full width */
+    }
+
+    .header {
+        padding: 15px 20px;
+    }
+}
+
+.chart-canvas-container {
+    position: relative;
+    height: 350px; /* Fixed height for consistent chart display */
+    width: 90%;
+    margin: 0 auto;
+}
+
+.chart-instruction {
+    font-size: 0.9em; /* Smaller text */
+    text-align: center;
+    color: #6c757d; /* Muted gray text */
+    padding: 5px 0 10px 0; /* Add some vertical space */
+    border-top: 1px solid #f0f0f0; /* Optional: Separator line */
+    margin-top: 10px;
+}
