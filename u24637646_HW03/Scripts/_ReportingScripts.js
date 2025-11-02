@@ -15,6 +15,7 @@
     // 1. LINE CHART SETUP AND CONTROL (Months appear as data runs)
     // =========================================================
 
+    // FIX 1: Defined lineConfig BEFORE it's used to initialize the chart
     const lineConfig = {
         type: 'line',
         data: {
@@ -35,7 +36,6 @@
             scales: {
                 x: {
                     type: 'category',
-                    // The labels array is intentionally empty here and populated during the simulation.
                 },
                 y: {
                     beginAtZero: true,
@@ -56,6 +56,9 @@
         document.getElementById('monthlyLineChart'),
         lineConfig
     );
+    // CRITICAL: Expose the chart instance globally for the save form logic
+    window.monthlyLineChart = monthlyLineChartInstance;
+
 
     // --- Live Chart Functions ---
 
@@ -77,117 +80,144 @@
         monthlyLineChartInstance.data.labels.push(historicalLineLabels[dataIndex]);
         monthlyLineChartInstance.data.datasets[0].data.push(historicalLineData[dataIndex]);
 
+        // Fix from previous round: ensure update is called and index increments
         monthlyLineChartInstance.update();
         dataIndex++;
     }
 
-    function stopLiveChart() {
+    // --- Live Chart Event Listeners ---
+    $('#StartLineChartButton').on('click', function () {
+        if (chartInterval === null) {
+            // Reset logic for restarting simulation
+            if (dataIndex >= historicalLineData.length) {
+                monthlyLineChartInstance.data.labels = [];
+                monthlyLineChartInstance.data.datasets[0].data = [];
+                dataIndex = 0;
+                monthlyLineChartInstance.update();
+                $('#StartLineChartButton').prop('disabled', false).text('Start Live Chart');
+                $('#StopLineChartButton').prop('disabled', false).text('Stop Live Chart');
+            }
+
+            chartInterval = setInterval(displayHistoricalData, 1000);
+            $('#StartLineChartButton').text('Running...');
+        }
+    });
+
+    $('#StopLineChartButton').on('click', function () {
         if (chartInterval !== null) {
             clearInterval(chartInterval);
             chartInterval = null;
-        } else {
-            return;
+            $('#StartLineChartButton').text('Resume Live Chart');
+            $('#StopLineChartButton').text('Stopped');
         }
-
-        $('#StartLineChartButton').prop('disabled', false).text('Resume Live Chart');
-        $('#StopLineChartButton').prop('disabled', true).text('Paused');
-    }
-
-    function startLiveChart() {
-        if (dataIndex >= historicalLineData.length) {
-            return;
-        }
-        if (chartInterval !== null) {
-            return;
-        }
-
-        const startButtonText = (dataIndex === 0) ? 'Running...' : 'Running... (Resumed)';
-
-        chartInterval = setInterval(displayHistoricalData, 400);
-
-        $('#StartLineChartButton').prop('disabled', true).text(startButtonText);
-        $('#StopLineChartButton').prop('disabled', false).text('Stop Live Chart');
-    }
-
-    // --- Button Event Handlers (using jQuery) ---
-    $('#StartLineChartButton').on('click', startLiveChart);
-    $('#StopLineChartButton').on('click', stopLiveChart);
-
-    // Set initial state
-    $('#StartLineChartButton').prop('disabled', false).text('Start Live Chart');
-    $('#StopLineChartButton').prop('disabled', true).text('Stop Live Chart');
+    });
 
 
     // =========================================================
-    // 2. DOUGHNUT CHART SETUP (Permanent External Labels Added)
+    // 2. DOUGHNUT CHART SETUP 
     // =========================================================
 
-    if (doughnutLabels && doughnutLabels.length > 0) {
-        const doughnutConfig = {
-            type: 'doughnut',
-            data: {
-                labels: doughnutLabels,
-                datasets: [{
-                    label: 'Total Revenue (USD)',
-                    data: doughnutData,
-                    backgroundColor: [
-                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
-                    ],
-                    hoverOffset: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                let label = context.label || '';
-                                if (label) { label += ': '; }
-                                if (context.parsed !== null) {
-                                    label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed);
-                                }
-                                return label;
-                            }
-                        }
-                    },
-                    // DATALABELS CONFIGURATION FOR PERMANENT EXTERNAL LABELS
-                    datalabels: {
-                        color: '#333',         // Dark color for visibility outside the chart
-                        anchor: 'end',          // Position the label at the outer edge of the slice
-                        align: 'start',         // Align text away from the center
-                        offset: 10,             // Distance from the chart edge
-                        
-                        // Leader lines are automatically drawn when offset is > 0 and position is outside
-                        textAlign: 'left',      // Ensure the two lines are left-aligned
-                        
-                        formatter: function (value, context) {
-                            // First line: Store Name
-                            const label = context.chart.data.labels[context.dataIndex];
-                            // Second line: Formatted Sales Amount
-                            const formattedValue = new Intl.NumberFormat('en-US', { 
-                                style: 'currency', 
-                                currency: 'USD', 
-                                minimumFractionDigits: 0, 
-                                maximumFractionDigits: 0 
-                            }).format(value);
-                            
-                            // Return an array to display the text on two lines
-                            return [label, formattedValue];
-                        },
-                        font: { 
-                            weight: 'bold', 
-                            size: 12 
-                        }
-                    }
+    function generateRandomColors(count) {
+        const colors = [];
+        for (let i = 0; i < count; i++) {
+            const r = Math.floor(Math.random() * 255);
+            const g = Math.floor(Math.random() * 255);
+            const b = Math.floor(Math.random() * 255);
+            colors.push(`rgb(${r}, ${g}, ${b})`);
+        }
+        return colors;
+    }
+
+    // FIX 2: Defined doughnutConfig BEFORE it's used to initialize the chart
+    const doughnutConfig = {
+        type: 'doughnut',
+        data: {
+            labels: doughnutLabels,
+            datasets: [{
+                label: 'Total Sales Revenue (ZAR)',
+                data: doughnutData,
+                backgroundColor: generateRandomColors(doughnutLabels.length),
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: false,
+                    text: 'Sales Revenue Distribution by Store'
+                }
+            }
+        }
+    };
+
+    // Initialize the Doughnut Chart.js instance
+    window.categoryDoughnutChart = new Chart(
+        document.getElementById('categoryDoughnutChart'),
+        doughnutConfig
+    );
+
+    // =========================================================
+    // 3. PDF GENERATION UTILITY FUNCTION
+    // =========================================================
+
+    window.getChartDocDef = function (chartTitle, chartObject, descriptionHtml) {
+        const chartBase64Image = chartObject.toBase64Image();
+
+        function htmlToPdfMake(html) {
+            const doc = [];
+            const parser = new DOMParser();
+            const docEl = parser.parseFromString(html, 'text/html').body;
+
+            // Handle simple paragraphs
+            docEl.childNodes.forEach(node => {
+                if (node.nodeType === 1 && node.tagName === 'P') {
+                    doc.push({ text: node.textContent, margin: [0, 5, 0, 0] });
+                }
+            });
+
+            if (doc.length === 0 && descriptionHtml.trim().length > 0) {
+                doc.push({ text: descriptionHtml, margin: [0, 5, 0, 0] });
+            }
+            return doc;
+        }
+
+        const descriptionContent = htmlToPdfMake(descriptionHtml);
+
+        return {
+            content: [
+                { text: chartTitle, style: 'header' },
+                { text: `Report Generated: ${new Date().toLocaleDateString()}`, margin: [0, 5, 0, 20] },
+
+                // Chart Image
+                {
+                    image: chartBase64Image,
+                    width: 500,
+                    alignment: 'center',
+                    margin: [0, 20, 0, 20]
+                },
+
+                // Description Section
+                { text: 'Description:', style: 'subheader', margin: [0, 10, 0, 5] },
+                ...descriptionContent
+            ],
+            styles: {
+                header: {
+                    fontSize: 18,
+                    bold: true
+                },
+                subheader: {
+                    fontSize: 15,
+                    bold: true
+                },
+                quote: {
+                    italics: true
                 }
             }
         };
-        new Chart(
-            document.getElementById('categoryDoughnutChart'),
-            doughnutConfig
-        );
-    }
+    };
 });

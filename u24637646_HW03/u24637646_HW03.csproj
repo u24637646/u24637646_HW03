@@ -128,6 +128,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\ArchivedReport.cs" />
     <Compile Include="Models\BikeStoresModel.Context.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -161,6 +162,8 @@
     <Compile Include="Models\products.cs">
       <DependentUpon>BikeStoresModel.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\ReportArchive.cs" />
+    <Compile Include="Models\ReportSubmissionModel.cs" />
     <Compile Include="Models\staffs.cs">
       <DependentUpon>BikeStoresModel.tt</DependentUpon>
     </Compile>

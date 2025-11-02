@@ -2,10 +2,8 @@
     ViewBag.Title = "Reports";
 }
 
-<head>
-    <link rel="stylesheet" href="~/Content/_ReportingStyles.css" />
-    <script src="https://cdn.tiny.cloud/1/ong4t6vwwpwhnn99x0emgdt7be7w0gn7dek4dil4h7xrps0itinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
-</head>
+<link rel="stylesheet" href="~/Content/_ReportingStyles.css" />
+<script src="https://cdn.tiny.cloud/1/ong4t6vwwpwhnn99x0emgdt7be7w0gn7dek4dil4h7xrps0itinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
 
 <body>
 
@@ -18,7 +16,6 @@
 
 
     <div class="dashboard-container">
-
         <div class="card">
 
             <div class="card-header">
@@ -36,10 +33,12 @@
 
                 <hr style="margin-top: 15px;" />
 
-                @using (Html.BeginForm("SaveChartReport", "Home", FormMethod.Post, new { @class = "p-3 border rounded mx-auto", style = "max-width: 450px; text-align: left;" }))
+                @using (Html.BeginForm("SaveChartReport", "Home", FormMethod.Post, new { id = "lineChartForm", @class = "p-3 border rounded mx-auto", style = "max-width: 450px; text-align: left;" }))
                 {
                     @Html.Hidden("ChartName", "Monthly Order Trend")
                     @Html.Hidden("Filetype", "PDF")
+                    @* Hidden input for Base64 data (used by JS before submission) *@
+                    <input type="hidden" name="PdfBase64Data" id="lineChartPdfBase64" />
 
                     <label for="lineChartFilename" class="form-label">File Name:</label>
                     <div class="input-group mb-3">
@@ -55,7 +54,6 @@
                     </div>
                 }
             </div>
-
         </div>
 
         <div class="card">
@@ -74,10 +72,12 @@
             </p>
 
             <div style="text-align: center; padding-top: 10px; padding-bottom: 10px;">
-                @using (Html.BeginForm("SaveChartReport", "Home", FormMethod.Post, new { @class = "p-3 border rounded mx-auto", style = "max-width: 450px; text-align: left;" }))
+                @using (Html.BeginForm("SaveChartReport", "Home", FormMethod.Post, new { id = "doughnutChartForm", @class = "p-3 border rounded mx-auto", style = "max-width: 450px; text-align: left;" }))
                 {
                     @Html.Hidden("ChartName", "Sales Revenue Distribution")
                     @Html.Hidden("Filetype", "PDF")
+                    @* Hidden input for Base64 data (used by JS before submission) *@
+                    <input type="hidden" name="PdfBase64Data" id="doughnutChartPdfBase64" />
 
                     <label for="doughnutChartFilename" class="form-label">File Name:</label>
                     <div class="input-group mb-3">
@@ -106,20 +106,24 @@
 
             <div class="card-body">
 
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>File Name</th>
-                            <th>Chart Type</th>
-                            <th>Date Saved</th>
-                            <th>Description</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (ViewBag.ArchivedReports != null)
-                        {
-                            foreach (var report in ViewBag.ArchivedReports)
+                @{
+                    var reports = ViewBag.ArchivedReports as List<u24637646_HW03.Models.ArchivedReport>;
+                }
+
+                @if (reports != null && reports.Any())
+                {
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Chart Type</th>
+                                <th>Date Saved</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var report in reports)
                             {
                                 <tr>
                                     <td>@report.Filename</td>
@@ -145,18 +149,19 @@
                                     </td>
                                 </tr>
                             }
-                        }
-                        else
-                        {
-                            <tr><td colspan="5">No reports archived yet.</td></tr>
-                        }
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="alert alert-info text-center" role="alert">
+                        **No reports archived yet.** Save a chart using the forms above to see it appear here.
+                    </div>
+                }
             </div>
         </div>
     </div>
 </body>
-
 <div class="modal fade" id="descriptionModal" tabindex="-1" aria-labelledby="descriptionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -181,9 +186,11 @@
     </div>
 </div>
 
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/vfs_fonts.js"></script>
 
     <script>
         // Define global variables to hold the JSON data
@@ -196,33 +203,102 @@
     <script src="~/Scripts/_ReportingScripts.js"></script>
 
     <script>
+        // Use a flag to ensure form handlers are only registered once
+        let formHandlersRegistered = false;
+
         // 1. Initialize TinyMCE for ALL THREE textareas
         tinymce.init({
-            // Target all three unique IDs: the two save forms and the one modal
             selector: '#lineChartDescription, #doughnutChartDescription, #reportDescriptionModal',
             plugins: 'autoresize link image lists',
             toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image',
             menubar: false,
-            // Autoresize settings for the resizable rich text box
             autoresize_bottom_margin: 16,
             min_height: 150,
             max_height: 500,
+
+            // CRITICAL FIX: Ensure form handlers are registered after all editors are initialized
+            setup: function (editor) {
+                // We check for the last expected editor ('reportDescriptionModal') to ensure everything is ready
+                if (editor.id === 'reportDescriptionModal' && !formHandlersRegistered) {
+                    editor.on('init', function () {
+                        registerFormHandlers();
+                        formHandlersRegistered = true;
+                    });
+                }
+            }
         });
 
-        // 2. jQuery/JavaScript logic to populate the modal on button click (UNCHANGED)
+        // Function to register the form handlers
+        function registerFormHandlers() {
+            // Intercept Monthly Line Chart Form Submission
+            $('#lineChartForm').off('submit').on('submit', function (e) {
+                e.preventDefault();
+
+                const chartObject = window.monthlyLineChart;
+                // CRITICAL CHECK: Ensure chart is fully drawn and available
+                if (!chartObject || !chartObject.toBase64Image) {
+                    alert("Error: Line Chart data is not ready. Please wait for the chart to load or run the live simulation first.");
+                    return;
+                }
+
+                const chartTitle = $(this).find('input[name="ChartName"]').val();
+
+                // CRITICAL CHECK: Ensure TinyMCE is available
+                const lineMCE = tinymce.get('lineChartDescription');
+                const description = lineMCE ? lineMCE.getContent() : '';
+
+                const docDefinition = getChartDocDef(chartTitle, chartObject, description);
+
+                pdfMake.createPdf(docDefinition).getBase64(function (data) {
+                    const base64Content = data.replace('data:application/pdf;base64,', '');
+                    $('#lineChartPdfBase64').val(base64Content);
+                    e.target.submit(); // Submit the form
+                });
+            });
+
+            // Intercept Sales Doughnut Chart Form Submission
+            $('#doughnutChartForm').off('submit').on('submit', function (e) {
+                e.preventDefault();
+
+                const chartObject = window.categoryDoughnutChart;
+                // CRITICAL CHECK: Ensure chart is fully drawn and available
+                if (!chartObject || !chartObject.toBase64Image) {
+                    alert("Error: Doughnut Chart data is not ready. Please wait for the chart to load.");
+                    return;
+                }
+
+                const chartTitle = $(this).find('input[name="ChartName"]').val();
+
+                // CRITICAL CHECK: Ensure TinyMCE is available
+                const doughnutMCE = tinymce.get('doughnutChartDescription');
+                const description = doughnutMCE ? doughnutMCE.getContent() : '';
+
+                const docDefinition = getChartDocDef(chartTitle, chartObject, description);
+
+                pdfMake.createPdf(docDefinition).getBase64(function (data) {
+                    const base64Content = data.replace('data:application/pdf;base64,', '');
+                    $('#doughnutChartPdfBase64').val(base64Content);
+                    e.target.submit(); // Submit the form
+                });
+            });
+        }
+
+
         $(document).ready(function () {
+            // Modal logic for editing archives (always runs on document ready)
             $('#descriptionModal').on('show.bs.modal', function (event) {
                 var button = $(event.relatedTarget);
                 var filename = button.data('filename');
                 var description = button.data('description');
-
                 var modal = $(this);
                 modal.find('#modal-filename').text(filename);
                 modal.find('#modal-hidden-filename').val(filename);
 
                 setTimeout(() => {
-                    if (tinymce.get('reportDescriptionModal')) {
-                        tinymce.get('reportDescriptionModal').setContent(description);
+                    const modalMCE = tinymce.get('reportDescriptionModal');
+                    if (modalMCE) {
+                        // This sets the TinyMCE content in the modal
+                        modalMCE.setContent(description);
                     }
                 }, 100);
             });

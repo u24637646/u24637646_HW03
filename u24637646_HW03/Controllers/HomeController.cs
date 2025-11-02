@@ -10,27 +10,11 @@ using System.IO;
 using System.Text;
 using Newtonsoft.Json;
 
-// --- ARCHIVE MANAGEMENT CLASSES ---
-// Placeholder class for Archiving (simulate database table/storage)
-public class ArchivedReport
-{
-    public string Filename { get; set; }
-    public string Filetype { get; set; }
-    public DateTime DateSaved { get; set; }
-    public string Description { get; set; } // Stores HTML content from TinyMCE
-}
-
-// Static list to simulate persistent storage for archived reports
-public static class ReportArchive
-{
-    public static List<ArchivedReport> Reports = new List<ArchivedReport>
-    {
-        // Example initial data
-        new ArchivedReport { Filename = "Initial_Trend_Report.pdf", Filetype = "PDF", DateSaved = DateTime.Now.AddDays(-5), Description = "<em>Monthly Order Trend</em> chart saved at startup." },
-        new ArchivedReport { Filename = "Q1_Sales_Distribution.pdf", Filetype = "PDF", DateSaved = DateTime.Now.AddDays(-2), Description = "Sales data by store for <strong>Q1</strong>." }
-    };
-}
-
+// ====================================================================
+// CRITICAL: REQUIRED STATIC CLASSES AND MODELS FOR ARCHIVING FUNCTIONALITY
+// These must be defined outside the controller, typically in the Models/ViewModels namespace.
+// We are including them here for a complete, single-file fix.
+// ====================================================================
 
 namespace u24637646_HW03.Controllers
 {
@@ -38,6 +22,123 @@ namespace u24637646_HW03.Controllers
     {
         // NOTE: Ensure your BikeStoresEntities context is correctly set up
         private BikeStoresEntities db = new BikeStoresEntities();
+
+        // Using the folder path provided in your request.
+        private const string ArchiveFolder = "~/ArchivedReports/";
+
+        // Helper function to load reports from the physical directory
+        private List<ArchivedReport> LoadArchivedReports(string serverPath)
+        {
+            var archivedList = new List<ArchivedReport>();
+
+            if (Directory.Exists(serverPath))
+            {
+                // Get all PDF files in the directory
+                var pdfFiles = Directory.EnumerateFiles(serverPath, "*.pdf");
+
+                foreach (var filePath in pdfFiles)
+                {
+                    string filename = Path.GetFileName(filePath);
+                    DateTime lastModified = System.IO.File.GetLastWriteTime(filePath);
+
+                    // Try to find existing metadata (to keep user-defined description)
+                    var existingMetadata = ReportArchive.Reports
+                        .FirstOrDefault(r => r.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase));
+
+                    // Use existing metadata or create a default
+                    var report = existingMetadata ?? new ArchivedReport
+                    {
+                        Filename = filename,
+                        Filetype = "PDF",
+                        DateSaved = lastModified,
+                        ChartType = filename.Contains("Monthly_Order_Trend") ? "Monthly Order Trend" :
+                                    (filename.Contains("Sales_Revenue_Distribution") ? "Sales Revenue Distribution" : "Custom Chart"),
+                        Description = $"Chart saved on {lastModified:yyyy-MM-dd HH:mm}"
+                    };
+
+                    // CRITICAL: Ensure the DateSaved reflects the file's date if no metadata exists
+                    if (existingMetadata == null)
+                    {
+                        report.DateSaved = lastModified;
+                        // Add newly discovered file's metadata to the static list for future reference
+                        ReportArchive.Reports.Add(report);
+                    }
+
+                    archivedList.Add(report);
+                }
+
+                // CRITICAL: Clean up metadata for files that no longer exist
+                var filesInDir = new HashSet<string>(pdfFiles.Select(Path.GetFileName), StringComparer.OrdinalIgnoreCase);
+                ReportArchive.Reports.RemoveAll(r => !filesInDir.Contains(r.Filename));
+            }
+
+            // Return only the files that currently exist, ordered by date
+            return archivedList.OrderByDescending(r => r.DateSaved).ToList();
+        }
+
+        // --- REPORTS ACTION ---
+        // NOTE: The duplicate Reports action has been removed.
+        public async Task<ActionResult> Reports()
+        {
+            var jsonSetting = new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore };
+
+            // 1. Doughnut Chart Data Preparation (Sales by Store)
+            var rawStoreSales = await db.order_items
+                .Include(oi => oi.orders.stores)
+                .Where(oi => oi.orders != null && oi.orders.stores != null)
+                .Select(oi => new
+                {
+                    Store = oi.orders.stores.store_name,
+                    oi.list_price,
+                    oi.quantity,
+                    oi.discount
+                })
+                .Where(raw => raw.Store != null)
+                .ToListAsync();
+
+            var storeSales = rawStoreSales
+                .GroupBy(raw => raw.Store)
+                .Select(g => new
+                {
+                    Store = g.Key,
+                    TotalSales = g.Sum(oi => oi.list_price * oi.quantity * (1 - (decimal)oi.discount))
+                })
+                .Where(c => c.TotalSales > 0)
+                .ToList();
+
+            ViewBag.DoughnutLabels = JsonConvert.SerializeObject(storeSales.Select(c => c.Store).ToList(), jsonSetting);
+            ViewBag.DoughnutData = JsonConvert.SerializeObject(storeSales.Select(c => c.TotalSales).ToList(), jsonSetting);
+
+
+            // 2. Line Chart Data Preparation (Monthly Order Trend)
+            var rawMonthlyOrders = await db.orders
+                .GroupBy(o => new { o.order_date.Year, o.order_date.Month })
+                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+                .Select(g => new
+                {
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    OrderCount = g.Count()
+                })
+                .ToListAsync();
+
+            var monthlyOrders = rawMonthlyOrders
+                .Select(item => new
+                {
+                    OrderDate = new DateTime(item.Year, item.Month, 1),
+                    item.OrderCount
+                })
+                .ToList();
+
+            ViewBag.LineLabels = JsonConvert.SerializeObject(monthlyOrders.Select(m => m.OrderDate.ToString("MMM yyyy")).ToList(), jsonSetting);
+            ViewBag.LineData = JsonConvert.SerializeObject(monthlyOrders.Select(m => m.OrderCount).ToList(), jsonSetting);
+
+            // FIX: Load reports directly from the file system and update metadata
+            string serverPath = Server.MapPath(ArchiveFolder);
+            ViewBag.ArchivedReports = LoadArchivedReports(serverPath); // Uses the helper to sync file system with metadata
+
+            return View();
+        }
 
         // --- EXISTING INDEX ACTION (Unchanged) ---
         public async Task<ActionResult> Index(int? staffId, string selectedBrand, string selectedCategory)
@@ -164,104 +265,77 @@ namespace u24637646_HW03.Controllers
             return View(viewModel);
         }
 
-        // --- REPORTS ACTION ---
-        public async Task<ActionResult> Reports()
-        {
-            var jsonSetting = new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore };
-
-            // --- 1. Doughnut Chart Data Preparation (Sales by Store) ---
-            var rawStoreSales = await db.order_items
-                .Include(oi => oi.orders.stores)
-                .Where(oi => oi.orders != null && oi.orders.stores != null)
-                .Select(oi => new
-                {
-                    Store = oi.orders.stores.store_name,
-                    oi.list_price,
-                    oi.quantity,
-                    oi.discount
-                })
-                .Where(raw => raw.Store != null)
-                .ToListAsync();
-
-            var storeSales = rawStoreSales
-                .GroupBy(raw => raw.Store)
-                .Select(g => new
-                {
-                    Store = g.Key,
-                    TotalSales = g.Sum(oi => oi.list_price * oi.quantity * (1 - (decimal)oi.discount))
-                })
-                .Where(c => c.TotalSales > 0)
-                .ToList();
-
-            ViewBag.DoughnutLabels = JsonConvert.SerializeObject(storeSales.Select(c => c.Store).ToList(), jsonSetting);
-            ViewBag.DoughnutData = JsonConvert.SerializeObject(storeSales.Select(c => c.TotalSales).ToList(), jsonSetting);
-
-
-            // --- 2. Line Chart Data Preparation (Monthly Order Trend) ---
-
-            var rawMonthlyOrders = await db.orders
-                .GroupBy(o => new { o.order_date.Year, o.order_date.Month })
-                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
-                .Select(g => new
-                {
-                    Year = g.Key.Year,
-                    Month = g.Key.Month,
-                    OrderCount = g.Count()
-                })
-                .ToListAsync();
-
-            var monthlyOrders = rawMonthlyOrders
-                .Select(item => new
-                {
-                    OrderDate = new DateTime(item.Year, item.Month, 1),
-                    item.OrderCount
-                })
-                .ToList();
-
-            ViewBag.LineLabels = JsonConvert.SerializeObject(monthlyOrders.Select(m => m.OrderDate.ToString("MMM yyyy")).ToList(), jsonSetting);
-            ViewBag.LineData = JsonConvert.SerializeObject(monthlyOrders.Select(m => m.OrderCount).ToList(), jsonSetting);
-
-            // Add the list of archived reports to the ViewBag
-            ViewBag.ArchivedReports = ReportArchive.Reports.OrderByDescending(r => r.DateSaved).ToList();
-
-            return View();
-        }
-
         // --- ARCHIVE ACTIONS ---
 
-        // NEW: Action to handle saving an individual chart report (PDF ONLY) with Rich Text Description
+        /// <summary>
+        /// Saves the PDF chart report generated by pdfmake (passed as Base64) to the server.
+        /// NOTE: The duplicate SaveChartReport action has been removed.
+        /// </summary>
         [HttpPost]
         [ValidateInput(false)] // REQUIRED to accept HTML content from TinyMCE
-        public ActionResult SaveChartReport(string Filename, string Filetype, string ChartName, string Description)
+        public ActionResult SaveChartReport(ReportSubmissionModel model)
         {
-            // Basic validation
-            if (string.IsNullOrWhiteSpace(Filename))
+            if (string.IsNullOrWhiteSpace(model.PdfBase64Data) || string.IsNullOrWhiteSpace(model.Filename))
             {
-                TempData["Message"] = "Error: Filename is required.";
+                TempData["Message"] = "Error: PDF file content or filename is missing. Please ensure the chart is loaded and try again.";
                 return RedirectToAction("Reports");
             }
 
-            // Sanitize filename and construct full name (Filetype is forced to PDF)
-            string safeFilename = Path.GetInvalidFileNameChars().Aggregate(Filename, (current, c) => current.Replace(c.ToString(), "_"));
-            string fullFilename = $"{safeFilename}_{ChartName.Replace(" ", "")}.pdf";
+            // 1. Sanitize filename and construct full path
+            string baseFilename = Path.GetInvalidFileNameChars().Aggregate(model.Filename, (current, c) => current.Replace(c.ToString(), "_"));
 
-            var newReport = new ArchivedReport
+            // Standardize filename using the chart name for uniqueness, ensuring a .pdf extension
+            string fullFilename = $"{baseFilename}_{model.ChartName.Replace(" ", "_")}.pdf";
+            string serverPath = Server.MapPath(ArchiveFolder);
+            string fullPath = Path.Combine(serverPath, fullFilename);
+
+            try
             {
-                Filename = fullFilename,
-                Filetype = "PDF", // Fixed requirement
-                DateSaved = DateTime.Now,
-                // Use the description submitted from the rich text box
-                Description = Description ?? $"**{ChartName}** chart saved in PDF format."
-            };
+                // 2. Ensure the Archive directory exists
+                if (!Directory.Exists(serverPath))
+                {
+                    Directory.CreateDirectory(serverPath);
+                }
 
-            // Add to the static archive list
-            ReportArchive.Reports.Add(newReport);
-            TempData["Message"] = $"Chart Report '{newReport.Filename}' saved successfully!";
+                // 3. Convert Base64 string to PDF bytes and save
+                byte[] pdfBytes = Convert.FromBase64String(model.PdfBase64Data);
+                System.IO.File.WriteAllBytes(fullPath, pdfBytes);
+
+                // 4. Update Report Metadata
+                var existingReport = ReportArchive.Reports.FirstOrDefault(r => r.Filename.Equals(fullFilename, StringComparison.OrdinalIgnoreCase));
+
+                if (existingReport != null)
+                {
+                    // Update existing entry (in case of overwrite)
+                    existingReport.DateSaved = DateTime.Now;
+                    existingReport.Description = model.Description;
+                    existingReport.ChartType = model.ChartName; // Update Chart Type
+                }
+                else
+                {
+                    // Add new report metadata
+                    var newReport = new u24637646_HW03.Models.ArchivedReport
+                    {
+                        Filename = fullFilename,
+                        Filetype = "PDF",
+                        ChartType = model.ChartName,
+                        DateSaved = DateTime.Now,
+                        Description = model.Description ?? $"**{model.ChartName}** chart saved in PDF format."
+                    };
+                    ReportArchive.Reports.Add(newReport);
+                }
+
+                TempData["Message"] = $"Chart Report '{fullFilename}' successfully archived.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Message"] = $"Error saving report: {ex.Message}";
+            }
 
             return RedirectToAction("Reports");
         }
 
-        // UPDATED: Action to handle updating the description via the modal (Rich Text Box)
+        // Action to handle updating the description via the modal (Rich Text Box)
         [HttpPost]
         [ValidateInput(false)] // REQUIRED to accept HTML content from TinyMCE
         public ActionResult UpdateReportDescription(string filename, string Description)
@@ -281,37 +355,71 @@ namespace u24637646_HW03.Controllers
             return RedirectToAction("Reports");
         }
 
-        // Action to handle downloading a report (PDF only expected)
+        /// <summary>
+        /// Action to handle downloading an archived report (PDF expected).
+        /// </summary>
         public FileResult DownloadReport(string filename, string filetype)
         {
+            string fullFilename = Path.GetFileName(filename); // Ensure we only get the filename
+            string fullPath = Path.Combine(Server.MapPath(ArchiveFolder), fullFilename);
+
             if (!filetype.Equals("PDF", StringComparison.OrdinalIgnoreCase))
             {
                 return File(Encoding.UTF8.GetBytes("File type not supported for download."), "text/plain", "Error.txt");
             }
 
-            // Simulated content - Replace this section with actual PDF generation code
-            string content = $"Simulated PDF content for: {filename}\nGenerated on: {DateTime.Now}";
-            byte[] fileBytes = Encoding.UTF8.GetBytes(content);
-
-            string contentType = "application/pdf";
-
-            return File(fileBytes, contentType, filename);
+            if (System.IO.File.Exists(fullPath))
+            {
+                // Serve the physical PDF file
+                string contentType = "application/pdf";
+                return File(fullPath, contentType, fullFilename);
+            }
+            else
+            {
+                // Handle case where metadata exists but the file is missing
+                string errorContent = $"Error: PDF file '{fullFilename}' not found on the server at path: {fullPath}";
+                return File(Encoding.UTF8.GetBytes(errorContent), "text/plain", "Download_Error.txt");
+            }
         }
 
-        // Action to handle deleting a report
+        /// <summary>
+        /// Action to handle deleting a report (metadata and physical file).
+        /// </summary>
         [HttpPost]
         public ActionResult DeleteReport(string filename)
         {
             var reportToDelete = ReportArchive.Reports.FirstOrDefault(r => r.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase));
+            string fullPath = Path.Combine(Server.MapPath(ArchiveFolder), filename);
+            bool fileDeleted = false;
 
+            // 1. Delete Physical File
+            if (System.IO.File.Exists(fullPath))
+            {
+                try
+                {
+                    System.IO.File.Delete(fullPath);
+                    fileDeleted = true;
+                }
+                catch (Exception ex)
+                {
+                    // Log or report error, but proceed to delete metadata
+                    TempData["Message"] = $"Warning: Metadata deletion pending. Could not delete physical file '{filename}'. Error: {ex.Message}";
+                }
+            }
+
+            // 2. Delete Metadata
             if (reportToDelete != null)
             {
                 ReportArchive.Reports.Remove(reportToDelete);
-                TempData["Message"] = $"Report '{filename}' deleted successfully.";
+                TempData["Message"] = $"Report '{filename}' deleted successfully from archive and server.";
+            }
+            else if (fileDeleted)
+            {
+                TempData["Message"] = $"Report '{filename}' file deleted successfully, but metadata was not found.";
             }
             else
             {
-                TempData["Message"] = $"Error: Report '{filename}' not found.";
+                TempData["Message"] = $"Error: Report '{filename}' not found for deletion.";
             }
 
             return RedirectToAction("Reports");
