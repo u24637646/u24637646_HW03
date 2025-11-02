@@ -179,6 +179,7 @@
     <Compile Include="ViewModels\CustomerPurchaseViewModel.cs" />
     <Compile Include="ViewModels\CustomerViewModel.cs" />
     <Compile Include="ViewModels\HomeIndexViewModel.cs" />
+    <Compile Include="ViewModels\MaintainViewModel.cs" />
     <Compile Include="ViewModels\ProductViewModel.cs" />
     <Compile Include="ViewModels\StaffSaleViewModel.cs" />
     <Compile Include="ViewModels\StaffViewModel.cs" />
@@ -263,6 +264,7 @@
     <Content Include="Scripts\modernizr-2.8.3.js" />
     <Content Include="Scripts\_IndexScripts.js" />
     <Content Include="Scripts\_LayoutScripts.js" />
+    <Content Include="Scripts\_MaintainScripts.js" />
     <Content Include="Scripts\_ReportingScripts.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
@@ -297,6 +299,12 @@
     <Content Include="Views\Home\Maintain.cshtml" />
     <Content Include="Views\staffs\_CreatePartial.cshtml" />
     <Content Include="Views\customers\_CreatePartial.cshtml" />
+    <Content Include="Views\customers\_EditPartial.cshtml" />
+    <Content Include="Views\customers\_DeletePartial.cshtml" />
+    <Content Include="Views\products\_EditPartial.cshtml" />
+    <Content Include="Views\products\_DeletePartial.cshtml" />
+    <Content Include="Views\staffs\_EditPartial.cshtml" />
+    <Content Include="Views\staffs\_DeletePartial.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

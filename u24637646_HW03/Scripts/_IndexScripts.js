@@ -1,5 +1,5 @@
 ﻿// ==================================================================================
-// _IndexScripts.js - Simplified & Fixed
+// _IndexScripts.js - REVISED (Jump by List Index)
 // ==================================================================================
 
 
@@ -47,8 +47,8 @@ function navigate(type, direction) {
 
         var dbId = $newItem.data(type + '-id');
 
-        // Update placeholder and clear input
-        $('#' + type + '-id-jump').attr('placeholder', dbId);
+        // Update placeholder to the new INDEX (1-based), and clear input
+        $('#' + type + '-id-jump').attr('placeholder', newIdx + 1);
         $('#' + type + '-id-jump').val('');
 
         // Update the ActionLink
@@ -59,70 +59,66 @@ function navigate(type, direction) {
 }
 
 // ------------------------------------------------------------------
-// Jump to Specific ID Function (FIXED for Placeholder Usage and Map check)
+// Jump to Specific Index Function (REVISED to jump by List Index)
+// NOTE: Function name kept as jumpToId for compatibility with Razor
 // ------------------------------------------------------------------
 function jumpToId(type) {
     var $input = $('#' + type + '-id-jump');
-    var inputId = $input.val();
-    var idToJump;
+    var inputVal = $input.val();
+    var totalCount = parseInt($('#' + type + '-count').text());
 
-    // --- 1. Determine the ID to jump to ---
-    if (inputId === null || inputId.trim() === '') {
-        var currentPlaceholder = $input.attr('placeholder');
-
-        if (currentPlaceholder && /^\d+$/.test(currentPlaceholder)) {
-            idToJump = parseInt(currentPlaceholder);
-        } else {
-            alert("Please enter a valid ID number.");
-            $input.val('');
-            return;
-        }
-    } else {
-        if (!/^\d+$/.test(inputId)) {
-            alert("Please enter a valid ID number.");
-            $input.val('');
-            return;
-        }
-        idToJump = parseInt(inputId);
-    }
-
-    // --- 2. Perform Lookup and Validation ---
-    if (typeof entityIdMap == 'undefined' || !entityIdMap[type]) {
-        console.error("entityIdMap or the map for type '" + type + "' is not initialized.");
-        alert("Navigation map is not ready. Please refresh the page.");
+    if (totalCount === 0) {
         $input.val('');
         return;
     }
 
-    var newIdx = entityIdMap[type][idToJump];
-
-    if (newIdx !== undefined) {
-        var indexInput = $('#' + type + '-index');
-        var currentIdx = parseInt(indexInput.val());
-
-        if (newIdx === currentIdx) {
-            $input.val('');
-            return;
-        }
-
-        // --- 3. Animation and Index Update ---
-        $('#' + type + '-' + currentIdx).fadeOut(100, function () {
-            var $newItem = $('#' + type + '-' + newIdx);
-            $newItem.fadeIn(200);
-
-            var dbId = $newItem.data(type + '-id');
-
-            $input.attr('placeholder', dbId);
-            $input.val('');
-
-            updateDetailsLink(type, dbId);
-        });
-
-        indexInput.val(newIdx);
-    } else {
-        alert(type.charAt(0).toUpperCase() + type.slice(1) + " ID " + idToJump + " not found in the current list.");
+    // 1. Check for empty input (exit early)
+    if (inputVal === null || inputVal.trim() === '') {
         $input.val('');
+        return;
     }
+
+    // 2. Validate input format (must be a number)
+    if (!/^\d+$/.test(inputVal)) {
+        alert("Please enter a valid list index number.");
+        $input.val('');
+        return;
+    }
+
+    // Input is 1-based (e.g., 1 to N), convert to 0-based
+    var jumpIndexOneBased = parseInt(inputVal);
+    var newIdx = jumpIndexOneBased - 1;
+
+    // 3. Validate input range
+    if (newIdx < 0 || newIdx >= totalCount) {
+        alert(type.charAt(0).toUpperCase() + type.slice(1) + " index " + jumpIndexOneBased + " is out of range (1 to " + totalCount + ").");
+        $input.val('');
+        return;
+    }
+
+    // 4. Perform Navigation
+    var indexInput = $('#' + type + '-index');
+    var currentIdx = parseInt(indexInput.val());
+
+    if (newIdx === currentIdx) {
+        $input.val('');
+        return;
+    }
+
+    $('#' + type + '-' + currentIdx).fadeOut(100, function () {
+        var $newItem = $('#' + type + '-' + newIdx);
+        $newItem.fadeIn(200);
+
+        var dbId = $newItem.data(type + '-id');
+
+        // Update placeholder to the new 1-based index
+        $input.attr('placeholder', newIdx + 1);
+        $input.val('');
+
+        updateDetailsLink(type, dbId);
+    });
+
+    indexInput.val(newIdx);
 }
 
 // ------------------------------------------------------------------
@@ -130,7 +126,7 @@ function jumpToId(type) {
 // ------------------------------------------------------------------
 $(document).ready(function () {
 
-    // Initialize all three panels: set initial placeholder and details link
+    // Initialize all three panels: set initial placeholder to index 1
     ['staff', 'customer', 'product'].forEach(function (type) {
         var initialItem = $('#' + type + '-0');
 
@@ -138,7 +134,8 @@ $(document).ready(function () {
             var initialId = initialItem.data(type + '-id');
 
             if (initialId) {
-                $('#' + type + '-id-jump').attr('placeholder', initialId);
+                // Initialize placeholder to the first INDEX: 1
+                $('#' + type + '-id-jump').attr('placeholder', 1);
                 updateDetailsLink(type, initialId);
             }
         }
@@ -149,10 +146,10 @@ $(document).ready(function () {
         $('.product-filter-form').submit();
     });
 
-    // --- Modal Popups for Staff Creation ---
+    // --- Modal Popups for Staff Creation (Unchanged) ---
     $('#createStaffBtn').click(function () {
         $.ajax({
-            url: '/Staffs/CreatePartial', // Use relative path
+            url: '/Staffs/CreatePartial',
             type: 'GET',
             cache: false,
             success: function (data) {
@@ -197,10 +194,10 @@ $(document).ready(function () {
         $('#staffModalBody').empty();
     });
 
-    // --- Modal Popups for Customer Creation ---
+    // --- Modal Popups for Customer Creation (Unchanged) ---
     $('#createCustomerBtn').click(function () {
         $.ajax({
-            url: '/Customers/CreatePartial', // Use relative path
+            url: '/Customers/CreatePartial',
             type: 'GET',
             cache: false,
             success: function (data) {

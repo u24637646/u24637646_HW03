@@ -1,7 +1,351 @@
-﻿
+﻿@model u24637646_HW03.ViewModels.MaintainViewModel
+
 @{
-    ViewBag.Title = "Maintain";
+    ViewBag.Title = "Maintain Records";
 }
 
-<h2>Maintain</h2>
+<head>
+    @* Ensure this path is correct for your custom styles *@
+    <link rel="stylesheet" href="~/Content/_MaintainStyles.css" />
+</head>
 
+<div class="body">
+
+    <header>
+        <h1><i class="glyphicon glyphicon-wrench"></i> Record Maintenance Dashboard</h1>
+    </header>
+
+    @* Success/Error Message Display (Crucial for showing results after modal submission) *@
+    @if (TempData["Message"] != null)
+    {
+        var alertClass = TempData["MessageClass"] ?? "alert-success";
+        <div class="alert @alertClass alert-dismissible" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            @Html.Raw(TempData["Message"])
+        </div>
+    }
+
+    <script>
+        // CRITICAL: Initialize global map objects for quick lookup/current ID tracking
+        var entityDataMap = entityDataMap || {};
+        var currentDisplayId = { 'staff': 0, 'customer': 0, 'product': 0 };
+    </script>
+
+    <div class="row dashboard-row">
+
+        @* ------------------------------------------------------------------ *@
+        @* --- Staff Panel --- *@
+        @* ------------------------------------------------------------------ *@
+        <div class="col-md-4">
+            <div class="panel panel-success dashboard-panel">
+                <div class="panel-heading maintain-heading">
+                    <h3 class="panel-title"><i class="glyphicon glyphicon-user"></i> Staff Maintenance</h3>
+
+                    @* Dropdown Selector *@
+                    <select id="staff-name-selector" class="form-control select-name" onchange="selectEntityByName(this, 'staff')">
+                        <option value="0">--- Select Staff Member ---</option>
+                        @if (Model.StaffsList != null)
+                        {
+                            foreach (var staff in Model.StaffsList.OrderBy(s => s.last_name))
+                            {
+                                <option value="@staff.staff_id">@staff.first_name @staff.last_name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="panel-body text-center" id="staff-panel-body">
+                    @if (Model.StaffsList != null && Model.StaffsList.Any())
+                    {
+                        for (int i = 0; i < Model.StaffsList.Count(); i++)
+                        {
+                            var staff = Model.StaffsList.ElementAt(i);
+
+                            @* CRITICAL: Store all staff data in JavaScript for client-side search/display updates *@
+                            <script>
+                                entityDataMap['staff'] = entityDataMap['staff'] || {};
+                                entityDataMap['staff'][@staff.staff_id] = {
+                                    id: @staff.staff_id,
+                                    name: '@staff.first_name @staff.last_name',
+                                    email: '@staff.email',
+                                    phone: '@staff.phone',
+                                    store: '@staff.store_name',
+                                    manager: '@staff.manager_name'
+                                };
+                                // Set initial display ID to the first item
+                                if (@i == 0) { currentDisplayId['staff'] = @staff.staff_id; }
+                            </script>
+
+                            @* Initial Display Content *@
+                            <div class="detail-item staff-item" id="staff-detail-container" style="display: @(i == 0 ? "block" : "none");">
+                                <h4 class="text-center">@staff.first_name @staff.last_name</h4>
+                                <p>Email: <strong id="staff-email">@staff.email</strong></p>
+                                <p>Phone: <strong id="staff-phone">@staff.phone</strong></p>
+                                <p>Store: <strong id="staff-store">@staff.store_name</strong></p>
+                                <p>Manager: <strong id="staff-manager">@staff.manager_name</strong></p>
+                                <hr />
+                                <h5 class="text-info">Search by Name or ID below.</h5>
+                                <input type="hidden" id="staff-current-id" value="@staff.staff_id" />
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-danger">No staff records found.</p>
+                        <input type="hidden" id="staff-current-id" value="0" />
+                    }
+                </div>
+
+                @* Panel Footer: Search and Action Buttons *@
+                <div class="panel-footer staff-navigator panel-navigator text-center">
+                    <div class="input-group input-group-sm search-group">
+                        <input id="staff-search-input" type="text" class="form-control text-center" placeholder="Search Staff Name or ID" />
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="button" onclick="filterAndDisplay('staff')">
+                                <i class="glyphicon glyphicon-search"></i>
+                            </button>
+                        </span>
+                    </div>
+
+                    <div class="btn-group btn-group-sm maintenance-actions" role="group">
+                        <button type="button" class="btn btn-warning" onclick="loadMaintenanceModal('staff', 'Edit')">
+                            Edit
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="confirmAndDelete('staff')">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ------------------------------------------------------------------ *@
+        @* --- Customer Panel --- *@
+        @* ------------------------------------------------------------------ *@
+        <div class="col-md-4">
+            <div class="panel panel-info dashboard-panel">
+                <div class="panel-heading maintain-heading">
+                    <h3 class="panel-title"><i class="glyphicon glyphicon-globe"></i> Customer Maintenance</h3>
+
+                    @* Dropdown Selector *@
+                    <select id="customer-name-selector" class="form-control select-name" onchange="selectEntityByName(this, 'customer')">
+                        <option value="0">--- Select Customer Name ---</option>
+                        @if (Model.CustomersList != null)
+                        {
+                            foreach (var customer in Model.CustomersList.OrderBy(c => c.last_name))
+                            {
+                                <option value="@customer.customer_id">@customer.first_name @customer.last_name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="panel-body text-center" id="customer-panel-body">
+                    @if (Model.CustomersList != null && Model.CustomersList.Any())
+                    {
+                        for (int i = 0; i < Model.CustomersList.Count(); i++)
+                        {
+                            var customer = Model.CustomersList.ElementAt(i);
+                            <script>
+                                entityDataMap['customer'] = entityDataMap['customer'] || {};
+                                entityDataMap['customer'][@customer.customer_id] = {
+                                    id: @customer.customer_id,
+                                    name: '@customer.first_name @customer.last_name',
+                                    email: '@customer.email',
+                                    phone: '@customer.phone',
+                                    city: '@customer.city',
+                                    state: '@customer.state',
+                                    street: '@customer.street',
+                                    zip: '@customer.zip_code'
+                                };
+                                if (@i == 0) { currentDisplayId['customer'] = @customer.customer_id; }
+                            </script>
+
+                            <div class="detail-item customer-item" id="customer-detail-container" style="display: @(i == 0 ? "block" : "none");">
+                                <h4 class="text-center">@customer.first_name @customer.last_name</h4>
+                                <p>Email: <strong id="customer-email">@customer.email</strong></p>
+                                <p>Phone: <strong id="customer-phone">@customer.phone</strong></p>
+                                <p>Location: <strong id="customer-location">@customer.city, @customer.state</strong></p>
+                                <p>Street: <strong id="customer-street">@customer.street</strong></p>
+                                <p>Zip: <strong id="customer-zip">@customer.zip_code</strong></p>
+                                <hr />
+                                <h5 class="text-info">Search by Name or ID below.</h5>
+                                <input type="hidden" id="customer-current-id" value="@customer.customer_id" />
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-danger">No customer records found.</p>
+                        <input type="hidden" id="customer-current-id" value="0" />
+                    }
+                </div>
+
+                <div class="panel-footer customer-navigator panel-navigator text-center">
+                    <div class="input-group input-group-sm search-group">
+                        <input id="customer-search-input" type="text" class="form-control text-center" placeholder="Search Customer Name or ID" />
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="button" onclick="filterAndDisplay('customer')">
+                                <i class="glyphicon glyphicon-search"></i>
+                            </button>
+                        </span>
+                    </div>
+
+                    <div class="btn-group btn-group-sm maintenance-actions" role="group">
+                        <button type="button" class="btn btn-warning" onclick="loadMaintenanceModal('customer', 'Edit')">
+                            Edit
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="confirmAndDelete('customer')">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ------------------------------------------------------------------ *@
+        @* --- Product Panel --- *@
+        @* ------------------------------------------------------------------ *@
+        <div class="col-md-4">
+            <div class="panel panel-warning dashboard-panel">
+                <div class="panel-heading maintain-heading">
+                    <h3 class="panel-title"><i class="glyphicon glyphicon-tag"></i> Product Maintenance</h3>
+
+                    @* Dropdown Selector *@
+                    <select id="product-name-selector" class="form-control select-name" onchange="selectEntityByName(this, 'product')">
+                        <option value="0">--- Select Product Name ---</option>
+                        @if (Model.ProductsList != null)
+                        {
+                            foreach (var product in Model.ProductsList.OrderBy(p => p.product_name))
+                            {
+                                <option value="@product.product_id">@product.product_name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="panel-body text-center" id="product-panel-body">
+                    @if (Model.ProductsList != null && Model.ProductsList.Any())
+                    {
+                        for (int i = 0; i < Model.ProductsList.Count(); i++)
+                        {
+                            var product = Model.ProductsList.ElementAt(i);
+                            // --- Placeholder for Image Path ---
+                            // Assuming image path logic (adjust this to your actual image naming convention)
+                            var brandBaseName = product.brand_name.Split(' ')[0];
+                            var imageUrl = Url.Content("~/Images/" + brandBaseName + "1.jpeg");
+                            // --- End Image Path Placeholder ---
+
+                            <script>
+                                entityDataMap['product'] = entityDataMap['product'] || {};
+                                entityDataMap['product'][@product.product_id] = {
+                                    id: @product.product_id,
+                                    name: '@product.product_name',
+                                    brand: '@product.brand_name',
+                                    category: '@product.category_name',
+                                    year: '@product.model_year',
+                                    price: '@product.list_price.ToString("C")',
+                                    stock: '@product.TotalStock',
+                                    imageUrl: '@imageUrl' // Storing the dynamic image URL
+                                };
+                                if (@i == 0) { currentDisplayId['product'] = @product.product_id; }
+                            </script>
+
+                            <div class="detail-item product-item" id="product-detail-container" style="display: @(i == 0 ? "block" : "none");">
+                                <h4 class="text-center">@product.product_name</h4>
+
+                                @* IMAGE CONTAINER *@
+                                <div class="image-container">
+                                    <img id="product-image" src="@imageUrl" alt="@product.product_name" style="max-width: 100%; height: auto; margin-bottom: 10px;" />
+                                </div>
+
+                                <p>Brand: <strong id="product-brand">@product.brand_name</strong></p>
+                                <p>Category: <strong id="product-category">@product.category_name</strong></p>
+                                <p>Model Year: <strong id="product-year">@product.model_year</strong></p>
+                                <p>Price: <strong id="product-price">@product.list_price.ToString("C")</strong></p>
+                                <p>Total Stock: <strong id="product-stock">@product.TotalStock</strong></p>
+                                <hr />
+                                <h5 class="text-info">Search by Name or ID below.</h5>
+                                <input type="hidden" id="product-current-id" value="@product.product_id" />
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-danger">No product records found.</p>
+                        <input type="hidden" id="product-current-id" value="0" />
+                    }
+                </div>
+
+                <div class="panel-footer product-navigator panel-navigator text-center">
+                    <div class="input-group input-group-sm search-group">
+                        <input id="product-search-input" type="text" class="form-control text-center" placeholder="Search Product Name or ID" />
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="button" onclick="filterAndDisplay('product')">
+                                <i class="glyphicon glyphicon-search"></i>
+                            </button>
+                        </span>
+                    </div>
+
+                    <div class="btn-group btn-group-sm maintenance-actions" role="group">
+                        <button type="button" class="btn btn-warning" onclick="loadMaintenanceModal('product', 'Edit')">
+                            Edit
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="confirmAndDelete('product')">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* --- Maintenance Modals (Placeholders for AJAX content) --- *@
+    <div class="modal fade" id="maintainStaffModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="maintainStaffModalTitle">Staff Maintenance</h4>
+                </div>
+                <div class="modal-body" id="maintainStaffModalBody">
+                    @* Staff maintenance/edit partial view content will load here via AJAX *@
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="maintainCustomerModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="maintainCustomerModalTitle">Customer Maintenance</h4>
+                </div>
+                <div class="modal-body" id="maintainCustomerModalBody">
+                    @* Customer maintenance/edit partial view content will load here via AJAX *@
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="maintainProductModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="maintainProductModalTitle">Product Maintenance</h4>
+                </div>
+                <div class="modal-body" id="maintainProductModalBody">
+                    @* Product maintenance/edit partial view content will load here via AJAX *@
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    @* This is the critical script that drives the maintenance logic *@
+    <script src="@Url.Content("~/Scripts/_MaintainScripts.js")"></script>
+}

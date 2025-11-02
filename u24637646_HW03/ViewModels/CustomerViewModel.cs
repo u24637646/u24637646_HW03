@@ -35,5 +35,7 @@ namespace u24637646_HW03.ViewModels
 
         [DisplayName("Zip Code")]
         public string zip_code { get; set; }
+
+        public int ListIndex { get; set; }
     }
 }

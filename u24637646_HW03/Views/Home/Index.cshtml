@@ -15,7 +15,9 @@
         <h1>Bike Stores Dashboard</h1>
     </header>
 
-    @* Success Message Display (using TempData set in the controller) *@
+    @* === MESSAGE DISPLAY AREA === *@
+
+    @* 1. Success Message Display (From Create POST: alert-success) *@
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible" role="alert">
@@ -23,6 +25,18 @@
             @Html.Raw(TempData["SuccessMessage"])
         </div>
     }
+
+    @* 2. General Message Display (From Edit/Delete POST via Home Controller's ViewBag) *@
+    @if (ViewBag.Message != null)
+    {
+        <div class="alert @ViewBag.MessageClass alert-dismissible" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            @Html.Raw(ViewBag.Message)
+        </div>
+    }
+
+    @* === END MESSAGE DISPLAY AREA === *@
+
 
     @* === START PRODUCT FILTER FORM === *@
     @using (Html.BeginForm("Index", "Home", FormMethod.Get, new { @class = "product-filter-form" }))
@@ -69,6 +83,8 @@
     @* === END PRODUCT FILTER FORM === *@
 
     <script>
+        // entityIdMap initialization is now UNNECESSARY as jumpToId uses index directly
+        // However, keeping this line here for structural safety if other scripts rely on it.
         var entityIdMap = entityIdMap || {};
     </script>
 
@@ -94,11 +110,6 @@
                         {
                             var staff = Model.StaffsList.ElementAt(i);
 
-                            @* CRITICAL: Entity ID Mapping for jumpToId function (Must remain) *@
-                            <script>
-                                entityIdMap['staff'] = entityIdMap['staff'] || {};
-                                entityIdMap['staff'][@staff.staff_id] = @i;
-                            </script>
 
                             @* DISPLAY LOGIC MUST REMAIN IN RAZOR *@
                             <div class="detail-item staff-item" id="staff-@i" data-staff-id="@staff.staff_id" style="display: @(i == 0 ? "block" : "none");">
@@ -113,7 +124,7 @@
                                 <ul class="list-unstyled sales-list">
                                     @{
                                         var staffSales = Model.StaffSalesList
-                                            .Where(s => s.staff_id == staff.staff_id).Take(5);
+                            .Where(s => s.staff_id == staff.staff_id).Take(5);
                                     }
                                     @if (staffSales.Any())
                                     {
@@ -144,7 +155,8 @@
                                        type="number"
                                        class="panel-nav form-control text-center"
                                        min="1"
-                                       placeholder="@(Model.StaffsList.First().staff_id)"
+                                       @* UPDATED PLACEHOLDER to 1-based index *@
+                                       placeholder="1"
                                        onchange="jumpToId('staff')"
                                        onkeypress="if(event.keyCode == 13) { jumpToId('staff'); return false; }" />
                             </div>
@@ -165,7 +177,7 @@
                     }
                     else
                     {
-                        @Html.ActionLink("View All Staff", "Index", "Staffs", null, new { @class = "btn btn-success btn-info" })
+                        @Html.ActionLink("View All Staff", "Index", "Staffs", null, new { @class = "btn btn-info btn-block" })
                     }
                 </div>
             </div>
@@ -191,12 +203,6 @@
                         {
                             var customer = Model.CustomersList.ElementAt(i);
 
-                            @* CRITICAL: Entity ID Mapping for jumpToId function (Must remain) *@
-                            <script>
-                                entityIdMap['customer'] = entityIdMap['customer'] || {};
-                                entityIdMap['customer'][@customer.customer_id] = @i;
-                            </script>
-
                             @* DISPLAY LOGIC MUST REMAIN IN RAZOR *@
                             <div class="detail-item customer-item" id="customer-@i" data-customer-id="@customer.customer_id" style="display: @(i == 0 ? "block" : "none");">
                                 <h4 class="text-center"> @customer.first_name @customer.last_name</h4>
@@ -210,7 +216,7 @@
                                 <ul class="list-unstyled sales-list">
                                     @{
                                         var customerPurchases = Model.CustomerPurchasesList
-                                        .Where(p => p.customer_id == customer.customer_id).Take(5);
+.Where(p => p.customer_id == customer.customer_id).Take(5);
                                     }
                                     @if (customerPurchases.Any())
                                     {
@@ -241,7 +247,8 @@
                                        type="number"
                                        class="panel-nav form-control text-center"
                                        min="1"
-                                       placeholder="@(Model.CustomersList.First().customer_id)"
+                                       @* UPDATED PLACEHOLDER to 1-based index *@
+                                       placeholder="1"
                                        onchange="jumpToId('customer')"
                                        onkeypress="if(event.keyCode == 13) { jumpToId('customer'); return false; }" />
                             </div>
@@ -269,7 +276,7 @@
         </div>
 
 
-        @*--- Products Panel (FIXED - Mapped) ---*@
+        @*--- Products Panel (FIXED - Index Jump) ---*@
         <div class="col-md-4">
             <div class="panel panel-warning dashboard-panel">
 
@@ -290,12 +297,6 @@
                             var brandBaseName = product.brand_name.Split(' ')[0];
                             var randomImageSuffix = (i % 2) + 1;
                             var imageUrl = Url.Content("~/Images/" + brandBaseName + randomImageSuffix + ".jpeg");
-
-                            @* CRITICAL FIX: Entity ID Mapping for jumpToId function (Must remain) *@
-                            <script>
-                                entityIdMap['product'] = entityIdMap['product'] || {};
-                                entityIdMap['product'][@product.product_id] = @i;
-                            </script>
 
                             @* DISPLAY LOGIC MUST REMAIN IN RAZOR *@
                             <div class="detail-item product-item"
@@ -335,7 +336,8 @@
                                        type="number"
                                        class="panel-nav form-control text-center"
                                        min="1"
-                                       placeholder="@(Model.ProductsList.First().product_id)"
+                                       @* UPDATED PLACEHOLDER to 1-based index *@
+                                       placeholder="1"
                                        onchange="jumpToId('product')"
                                        onkeypress="if(event.keyCode == 13) { jumpToId('product'); return false; }" />
                             </div>
@@ -366,7 +368,8 @@
         </div>
     </div>
 
-    @*--- Modal Staff Popups ---*@
+    @* --- MODALS (UNTOUCHED) --- *@
+
     <div class="modal fade" id="createStaffModal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -375,13 +378,12 @@
                     <h4 class="modal-title">Create New Staff Member</h4>
                 </div>
                 <div class="modal-body" id="staffModalBody">
-                    @* Partial view content will load here via AJAX *@
+
                 </div>
             </div>
         </div>
     </div>
 
-    @*--- Modal Customers Popups ---*@
     <div class="modal fade" id="createCustomerModal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -390,7 +392,6 @@
                     <h4 class="modal-title">Create New Customer</h4>
                 </div>
                 <div class="modal-body" id="customerModalBody">
-                    @* Partial view content will load here via AJAX *@
                 </div>
             </div>
         </div>
