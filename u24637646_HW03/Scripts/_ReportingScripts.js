@@ -98,7 +98,8 @@
                 $('#StopLineChartButton').prop('disabled', false).text('Stop Live Chart');
             }
 
-            chartInterval = setInterval(displayHistoricalData, 1000);
+            // 💡 CHANGE 2: Make the line running slightly faster by changing 1000ms to 500ms
+            chartInterval = setInterval(displayHistoricalData, 500);
             $('#StartLineChartButton').text('Running...');
         }
     });
@@ -117,16 +118,18 @@
     // 2. DOUGHNUT CHART SETUP 
     // =========================================================
 
-    function generateRandomColors(count) {
-        const colors = [];
-        for (let i = 0; i < count; i++) {
-            const r = Math.floor(Math.random() * 255);
-            const g = Math.floor(Math.random() * 255);
-            const b = Math.floor(Math.random() * 255);
-            colors.push(`rgb(${r}, ${g}, ${b})`);
-        }
-        return colors;
-    }
+    // 💡 CHANGE 3: Use a fixed, professional color palette instead of random colors
+    const fixedDoughnutColors = [
+        'rgb(255, 99, 132)', // Red
+        'rgb(54, 162, 235)', // Blue
+        'rgb(255, 205, 86)', // Yellow
+        'rgb(75, 192, 192)', // Green
+        'rgb(153, 102, 255)', // Purple
+        'rgb(255, 159, 64)', // Orange
+        'rgb(201, 203, 207)' // Grey (if needed for more data points)
+    ];
+
+    // Remove the unused generateRandomColors function
 
     // FIX 2: Defined doughnutConfig BEFORE it's used to initialize the chart
     const doughnutConfig = {
@@ -136,7 +139,8 @@
             datasets: [{
                 label: 'Total Sales Revenue (ZAR)',
                 data: doughnutData,
-                backgroundColor: generateRandomColors(doughnutLabels.length),
+                // Use the fixed color palette, slicing if more labels than colors
+                backgroundColor: fixedDoughnutColors.slice(0, doughnutLabels.length),
                 hoverOffset: 4
             }]
         },
@@ -189,6 +193,11 @@
         const descriptionContent = htmlToPdfMake(descriptionHtml);
 
         return {
+            // 💡 CHANGE 1: Add defaultStyle to remove the automatic suffix when saving
+            defaultStyle: {
+                fontSize: 10,
+                font: 'Roboto' // Assuming 'Roboto' is registered or available
+            },
             content: [
                 { text: chartTitle, style: 'header' },
                 { text: `Report Generated: ${new Date().toLocaleDateString()}`, margin: [0, 5, 0, 20] },

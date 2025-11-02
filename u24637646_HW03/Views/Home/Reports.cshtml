@@ -3,7 +3,10 @@
 }
 
 <link rel="stylesheet" href="~/Content/_ReportingStyles.css" />
-<script src="https://cdn.tiny.cloud/1/ong4t6vwwpwhnn99x0emgdt7be7w0gn7dek4dil4h7xrps0itinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+<!-- Updated TinyMCE CDN link - using a more reliable version -->
+
+<!-- Place the first <script> tag in your HTML's <head> -->
+<script src="https://cdn.tiny.cloud/1/ong4t6vwwpwhnn99x0emgdt7be7w0gn7dek4dil4h7xrps0i/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
 
 <body>
 
@@ -203,104 +206,197 @@
     <script src="~/Scripts/_ReportingScripts.js"></script>
 
     <script>
-        // Use a flag to ensure form handlers are only registered once
-        let formHandlersRegistered = false;
+        $(document).ready(function () {
+            console.log('Document ready - initializing report functionality');
 
-        // 1. Initialize TinyMCE for ALL THREE textareas
-        tinymce.init({
-            selector: '#lineChartDescription, #doughnutChartDescription, #reportDescriptionModal',
-            plugins: 'autoresize link image lists',
-            toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image',
-            menubar: false,
-            autoresize_bottom_margin: 16,
-            min_height: 150,
-            max_height: 500,
+            // Track TinyMCE initialization
+            let tinyMCEInitialized = 0;
+            const totalEditors = 3;
+            let tinyMCEAvailable = false;
 
-            // CRITICAL FIX: Ensure form handlers are registered after all editors are initialized
-            setup: function (editor) {
-                // We check for the last expected editor ('reportDescriptionModal') to ensure everything is ready
-                if (editor.id === 'reportDescriptionModal' && !formHandlersRegistered) {
-                    editor.on('init', function () {
-                        registerFormHandlers();
-                        formHandlersRegistered = true;
-                    });
+            // Function to safely get content from textarea (with or without TinyMCE)
+            function getEditorContent(editorId) {
+                if (typeof tinymce !== 'undefined' && tinymce.get(editorId)) {
+                    return tinymce.get(editorId).getContent();
+                } else {
+                    // Fallback to plain textarea value
+                    return $('#' + editorId).val() || '';
                 }
             }
-        });
 
-        // Function to register the form handlers
-        function registerFormHandlers() {
-            // Intercept Monthly Line Chart Form Submission
-            $('#lineChartForm').off('submit').on('submit', function (e) {
-                e.preventDefault();
+            // Function to register form handlers (works with or without TinyMCE)
+            function registerFormHandlers() {
+                console.log('Registering form handlers...');
 
-                const chartObject = window.monthlyLineChart;
-                // CRITICAL CHECK: Ensure chart is fully drawn and available
-                if (!chartObject || !chartObject.toBase64Image) {
-                    alert("Error: Line Chart data is not ready. Please wait for the chart to load or run the live simulation first.");
-                    return;
-                }
+                // Intercept Monthly Line Chart Form Submission
+                $('#lineChartForm').off('submit').on('submit', function (e) {
+                    e.preventDefault();
+                    console.log('Line Chart Form submitted');
 
-                const chartTitle = $(this).find('input[name="ChartName"]').val();
+                    const chartObject = window.monthlyLineChart;
 
-                // CRITICAL CHECK: Ensure TinyMCE is available
-                const lineMCE = tinymce.get('lineChartDescription');
-                const description = lineMCE ? lineMCE.getContent() : '';
+                    if (!chartObject) {
+                        alert("Error: Line Chart is not initialized. Please refresh the page.");
+                        return false;
+                    }
 
-                const docDefinition = getChartDocDef(chartTitle, chartObject, description);
+                    if (!chartObject.data || !chartObject.data.labels || chartObject.data.labels.length === 0) {
+                        alert("Error: Line Chart has no data. Please run the live simulation first by clicking 'Start Live Chart'.");
+                        return false;
+                    }
 
-                pdfMake.createPdf(docDefinition).getBase64(function (data) {
-                    const base64Content = data.replace('data:application/pdf;base64,', '');
-                    $('#lineChartPdfBase64').val(base64Content);
-                    e.target.submit(); // Submit the form
+                    try {
+                        const chartTitle = $(this).find('input[name="ChartName"]').val();
+                        const description = getEditorContent('lineChartDescription');
+
+                        console.log('Chart Title:', chartTitle);
+                        console.log('Description:', description.substring(0, 50) + '...');
+                        console.log('Generating PDF for Line Chart...');
+
+                        const docDefinition = window.getChartDocDef(chartTitle, chartObject, description);
+
+                        pdfMake.createPdf(docDefinition).getBase64(function (base64Data) {
+                            console.log('PDF generated successfully, Base64 length:', base64Data.length);
+
+                            const cleanBase64 = base64Data.replace(/^data:application\/pdf;base64,/, '');
+
+                            $('#lineChartPdfBase64').val(cleanBase64);
+                            console.log('Submitting form with Base64 data (length: ' + cleanBase64.length + ')');
+
+                            e.target.submit();
+                        });
+                    } catch (error) {
+                        console.error('Error generating Line Chart PDF:', error);
+                        alert('Error generating PDF: ' + error.message);
+                        return false;
+                    }
                 });
-            });
 
-            // Intercept Sales Doughnut Chart Form Submission
-            $('#doughnutChartForm').off('submit').on('submit', function (e) {
-                e.preventDefault();
+                // Intercept Sales Doughnut Chart Form Submission
+                $('#doughnutChartForm').off('submit').on('submit', function (e) {
+                    e.preventDefault();
+                    console.log('Doughnut Chart Form submitted');
 
-                const chartObject = window.categoryDoughnutChart;
-                // CRITICAL CHECK: Ensure chart is fully drawn and available
-                if (!chartObject || !chartObject.toBase64Image) {
-                    alert("Error: Doughnut Chart data is not ready. Please wait for the chart to load.");
-                    return;
-                }
+                    const chartObject = window.categoryDoughnutChart;
 
-                const chartTitle = $(this).find('input[name="ChartName"]').val();
+                    if (!chartObject) {
+                        alert("Error: Doughnut Chart is not initialized. Please refresh the page.");
+                        return false;
+                    }
 
-                // CRITICAL CHECK: Ensure TinyMCE is available
-                const doughnutMCE = tinymce.get('doughnutChartDescription');
-                const description = doughnutMCE ? doughnutMCE.getContent() : '';
+                    if (!chartObject.data || !chartObject.data.datasets || chartObject.data.datasets.length === 0) {
+                        alert("Error: Doughnut Chart has no data. Please wait for the chart to load.");
+                        return false;
+                    }
 
-                const docDefinition = getChartDocDef(chartTitle, chartObject, description);
+                    try {
+                        const chartTitle = $(this).find('input[name="ChartName"]').val();
+                        const description = getEditorContent('doughnutChartDescription');
 
-                pdfMake.createPdf(docDefinition).getBase64(function (data) {
-                    const base64Content = data.replace('data:application/pdf;base64,', '');
-                    $('#doughnutChartPdfBase64').val(base64Content);
-                    e.target.submit(); // Submit the form
+                        console.log('Chart Title:', chartTitle);
+                        console.log('Description:', description.substring(0, 50) + '...');
+                        console.log('Generating PDF for Doughnut Chart...');
+
+                        const docDefinition = window.getChartDocDef(chartTitle, chartObject, description);
+
+                        pdfMake.createPdf(docDefinition).getBase64(function (base64Data) {
+                            console.log('PDF generated successfully, Base64 length:', base64Data.length);
+
+                            const cleanBase64 = base64Data.replace(/^data:application\/pdf;base64,/, '');
+
+                            $('#doughnutChartPdfBase64').val(cleanBase64);
+                            console.log('Submitting form with Base64 data (length: ' + cleanBase64.length + ')');
+
+                            e.target.submit();
+                        });
+                    } catch (error) {
+                        console.error('Error generating Doughnut Chart PDF:', error);
+                        alert('Error generating PDF: ' + error.message);
+                        return false;
+                    }
                 });
-            });
-        }
 
+                console.log('Form handlers registered successfully');
+            }
 
-        $(document).ready(function () {
-            // Modal logic for editing archives (always runs on document ready)
+            // Try to initialize TinyMCE, but don't depend on it
+            if (typeof tinymce !== 'undefined') {
+                console.log('TinyMCE is available, initializing...');
+                tinyMCEAvailable = true;
+
+                tinymce.init({
+                    selector: '#lineChartDescription, #doughnutChartDescription, #reportDescriptionModal',
+                    plugins: 'autoresize link image lists',
+                    toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image',
+                    menubar: false,
+                    autoresize_bottom_margin: 16,
+                    min_height: 150,
+                    max_height: 500,
+                    setup: function (editor) {
+                        editor.on('init', function () {
+                            tinyMCEInitialized++;
+                            console.log('TinyMCE editor initialized:', editor.id, '(' + tinyMCEInitialized + '/' + totalEditors + ')');
+
+                            if (tinyMCEInitialized === totalEditors) {
+                                console.log('All TinyMCE editors initialized.');
+                                registerFormHandlers();
+                            }
+                        });
+                    }
+                });
+
+                // Fallback: if TinyMCE takes too long, register handlers anyway
+                setTimeout(function () {
+                    if (tinyMCEInitialized < totalEditors) {
+                        console.warn('TinyMCE initialization timeout. Registering handlers without TinyMCE.');
+                        registerFormHandlers();
+                    }
+                }, 3000);
+            } else {
+                console.warn('TinyMCE is not available. Using plain textareas. Registering handlers...');
+                // Register form handlers immediately if TinyMCE isn't available
+                registerFormHandlers();
+            }
+
+            // Modal logic for editing archives
             $('#descriptionModal').on('show.bs.modal', function (event) {
                 var button = $(event.relatedTarget);
                 var filename = button.data('filename');
                 var description = button.data('description');
                 var modal = $(this);
+
                 modal.find('#modal-filename').text(filename);
                 modal.find('#modal-hidden-filename').val(filename);
 
-                setTimeout(() => {
-                    const modalMCE = tinymce.get('reportDescriptionModal');
-                    if (modalMCE) {
-                        // This sets the TinyMCE content in the modal
-                        modalMCE.setContent(description);
+                setTimeout(function () {
+                    if (typeof tinymce !== 'undefined' && tinymce.get('reportDescriptionModal')) {
+                        tinymce.get('reportDescriptionModal').setContent(description || '');
+                        console.log('Modal TinyMCE content set for:', filename);
+                    } else {
+                        $('#reportDescriptionModal').val(description || '');
+                        console.log('Modal textarea content set for:', filename);
                     }
-                }, 100);
+                }, 150);
+            });
+
+            tinymce.init({
+                selector: 'textarea',
+                plugins: [
+                    // Core editing features
+                    'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
+                    // Your account includes a free trial of TinyMCE premium features
+                    // Try the most popular premium features until Nov 16, 2025:
+                    'checklist', 'mediaembed', 'casechange', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'advtemplate', 'ai', 'uploadcare', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown', 'importword', 'exportword', 'exportpdf'
+                ],
+                toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+                tinycomments_mode: 'embedded',
+                tinycomments_author: 'Author name',
+                mergetags_list: [
+                    { value: 'First.Name', title: 'First Name' },
+                    { value: 'Email', title: 'Email' },
+                ],
+                ai_request: (request, respondWith) => respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
+                uploadcare_public_key: '0f66733de1782e01cf31',
             });
         });
     </script>

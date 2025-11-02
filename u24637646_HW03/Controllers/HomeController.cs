@@ -275,57 +275,110 @@ namespace u24637646_HW03.Controllers
         [ValidateInput(false)] // REQUIRED to accept HTML content from TinyMCE
         public ActionResult SaveChartReport(ReportSubmissionModel model)
         {
-            if (string.IsNullOrWhiteSpace(model.PdfBase64Data) || string.IsNullOrWhiteSpace(model.Filename))
+            // Enhanced validation and logging
+            if (string.IsNullOrWhiteSpace(model.PdfBase64Data))
             {
-                TempData["Message"] = "Error: PDF file content or filename is missing. Please ensure the chart is loaded and try again.";
+                TempData["Message"] = "Error: PDF data is missing. Please try generating the chart again.";
                 return RedirectToAction("Reports");
             }
 
-            // 1. Sanitize filename and construct full path
-            string baseFilename = Path.GetInvalidFileNameChars().Aggregate(model.Filename, (current, c) => current.Replace(c.ToString(), "_"));
+            if (string.IsNullOrWhiteSpace(model.Filename))
+            {
+                TempData["Message"] = "Error: Filename is missing. Please provide a valid filename.";
+                return RedirectToAction("Reports");
+            }
 
-            // Standardize filename using the chart name for uniqueness, ensuring a .pdf extension
-            string fullFilename = $"{baseFilename}_{model.ChartName.Replace(" ", "_")}.pdf";
-            string serverPath = Server.MapPath(ArchiveFolder);
-            string fullPath = Path.Combine(serverPath, fullFilename);
+            if (string.IsNullOrWhiteSpace(model.ChartName))
+            {
+                TempData["Message"] = "Error: Chart name is missing.";
+                return RedirectToAction("Reports");
+            }
 
             try
             {
+                // 1. Clean and sanitize filename
+                string baseFilename = Path.GetInvalidFileNameChars()
+                    .Aggregate(model.Filename, (current, c) => current.Replace(c.ToString(), "_"));
+
+                // Remove any existing .pdf extension to avoid duplication
+                if (baseFilename.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                {
+                    baseFilename = baseFilename.Substring(0, baseFilename.Length - 4);
+                }
+
+                // Create standardized filename
+                string fullFilename = $"{baseFilename}_{model.ChartName.Replace(" ", "_")}.pdf";
+
+                string serverPath = Server.MapPath(ArchiveFolder);
+                string fullPath = Path.Combine(serverPath, fullFilename);
+
                 // 2. Ensure the Archive directory exists
                 if (!Directory.Exists(serverPath))
                 {
                     Directory.CreateDirectory(serverPath);
                 }
 
-                // 3. Convert Base64 string to PDF bytes and save
-                byte[] pdfBytes = Convert.FromBase64String(model.PdfBase64Data);
+                // 3. Clean Base64 string (remove any whitespace or data URI prefix)
+                string cleanBase64 = model.PdfBase64Data
+                    .Replace("data:application/pdf;base64,", "")
+                    .Replace("\r", "")
+                    .Replace("\n", "")
+                    .Replace(" ", "");
+
+                // Validate Base64 string
+                if (cleanBase64.Length % 4 != 0)
+                {
+                    TempData["Message"] = "Error: Invalid PDF data format. Please try again.";
+                    return RedirectToAction("Reports");
+                }
+
+                // 4. Convert Base64 string to PDF bytes and save
+                byte[] pdfBytes = Convert.FromBase64String(cleanBase64);
+
+                // Validate that we have actual data
+                if (pdfBytes.Length == 0)
+                {
+                    TempData["Message"] = "Error: PDF data is empty. Please try generating the chart again.";
+                    return RedirectToAction("Reports");
+                }
+
+                // Write the file
                 System.IO.File.WriteAllBytes(fullPath, pdfBytes);
 
-                // 4. Update Report Metadata
-                var existingReport = ReportArchive.Reports.FirstOrDefault(r => r.Filename.Equals(fullFilename, StringComparison.OrdinalIgnoreCase));
+                // 5. Update Report Metadata
+                var existingReport = ReportArchive.Reports
+                    .FirstOrDefault(r => r.Filename.Equals(fullFilename, StringComparison.OrdinalIgnoreCase));
 
                 if (existingReport != null)
                 {
                     // Update existing entry (in case of overwrite)
                     existingReport.DateSaved = DateTime.Now;
-                    existingReport.Description = model.Description;
-                    existingReport.ChartType = model.ChartName; // Update Chart Type
+                    existingReport.Description = string.IsNullOrWhiteSpace(model.Description)
+                        ? $"**{model.ChartName}** chart saved on {DateTime.Now:yyyy-MM-dd HH:mm}"
+                        : model.Description;
+                    existingReport.ChartType = model.ChartName;
                 }
                 else
                 {
                     // Add new report metadata
-                    var newReport = new u24637646_HW03.Models.ArchivedReport
+                    var newReport = new ArchivedReport
                     {
                         Filename = fullFilename,
                         Filetype = "PDF",
                         ChartType = model.ChartName,
                         DateSaved = DateTime.Now,
-                        Description = model.Description ?? $"**{model.ChartName}** chart saved in PDF format."
+                        Description = string.IsNullOrWhiteSpace(model.Description)
+                            ? $"**{model.ChartName}** chart saved on {DateTime.Now:yyyy-MM-dd HH:mm}"
+                            : model.Description
                     };
                     ReportArchive.Reports.Add(newReport);
                 }
 
-                TempData["Message"] = $"Chart Report '{fullFilename}' successfully archived.";
+                TempData["Message"] = $"✓ Chart Report '{fullFilename}' successfully archived! ({pdfBytes.Length:N0} bytes)";
+            }
+            catch (FormatException ex)
+            {
+                TempData["Message"] = $"Error: Invalid PDF data format. {ex.Message}";
             }
             catch (Exception ex)
             {
