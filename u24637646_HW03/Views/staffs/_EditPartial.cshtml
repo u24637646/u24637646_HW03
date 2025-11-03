@@ -1,7 +1,6 @@
 ﻿@model u24637646_HW03.Models.staffs
 
 <link href="~/Content/_DataStyleSheet.css" rel="stylesheet" type="text/css" />
-@* Assuming an EditPartialPost action exists in the controller for AJAX submit *@
 @using (Html.BeginForm("EditPartialPost", "staffs", FormMethod.Post, new { id = "editStaffForm" }))
 {
     @Html.AntiForgeryToken()

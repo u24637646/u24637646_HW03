@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
+using System.Net;
 
 namespace u24637646_HW03.Controllers
 {
@@ -565,90 +566,95 @@ namespace u24637646_HW03.Controllers
             return Json(new { success = true, staff = staffModel }, JsonRequestBehavior.AllowGet);
         }
 
-        // Update staff member
+        [HttpGet]
+        public async Task<ActionResult> StaffEditPartial(int id)
+        {
+            var staff = await db.staffs.FindAsync(id);
+
+            if (staff == null)
+            {
+                return HttpNotFound("Staff member not found.");
+            }
+
+            ViewBag.store_id = new SelectList(await db.stores.ToListAsync(), "store_id", "store_name", staff.store_id);
+            ViewBag.manager_id = new SelectList(await db.staffs.OrderBy(s => s.last_name).ToListAsync(), "staff_id", "last_name", staff.manager_id);
+
+            return PartialView("_EditPartial", staff); // Note the expected partial view name
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> UpdateStaff(StaffViewModel model)
+        public async Task<ActionResult> UpdateStaff(u24637646_HW03.Models.staffs staff)
         {
             if (ModelState.IsValid)
             {
-                var staff = await db.staffs.FindAsync(model.staff_id);
-
-                if (staff == null)
-                {
-                    return Json(new { success = false, message = "Staff member not found." });
-                }
-
-                // Update properties
-                staff.first_name = model.first_name;
-                staff.last_name = model.last_name;
-                staff.email = model.email;
-                staff.phone = model.phone;
-                staff.active = model.active;
-                staff.store_id = model.store_id;
-                staff.manager_id = model.manager_id;
-
                 db.Entry(staff).State = EntityState.Modified;
 
                 try
                 {
                     await db.SaveChangesAsync();
-
-                    // Return updated data for UI refresh
-                    var updatedStaff = await db.staffs
-                        .Include(s => s.stores).Include(s => s.staffs2)
-                        .Where(s => s.staff_id == model.staff_id)
-                        .Select(s => new StaffViewModel
-                        {
-                            staff_id = s.staff_id,
-                            first_name = s.first_name,
-                            last_name = s.last_name,
-                            email = s.email,
-                            phone = s.phone,
-                            active = s.active,
-                            store_name = s.stores.store_name,
-                            manager_name = s.manager_id == null ? "No Manager" : s.staffs2.first_name + " " + s.staffs2.last_name
-                        })
-                        .FirstOrDefaultAsync();
-
-                    // ADDED REDIRECT URL
-                    return Json(new { success = true, message = $"Staff '{model.first_name} {model.last_name}' updated successfully.", data = updatedStaff, redirectUrl = Url.Action("Maintain", "Home") });
+                    TempData["Message"] = $"Staff member **{staff.first_name} {staff.last_name}** (ID: {staff.staff_id}) updated successfully.";
+                    TempData["MessageClass"] = "alert-success";
+                    return Json(new { success = true, redirectUrl = Url.Action("Maintain", "Home") });
                 }
                 catch (Exception ex)
                 {
+                    // If DB save fails (e.g., integrity constraint)
                     return Json(new { success = false, message = $"Update failed: {ex.Message}" });
                 }
             }
 
-            var errors = ModelState.Where(x => x.Value.Errors.Any()).Select(x => new { x.Key, x.Value.Errors }).ToList();
-            return Json(new { success = false, message = "Validation failed.", errors = errors });
+            // IF VALIDATION FAILS (The FIX): Return the partial view HTML with errors
+            ViewBag.store_id = new SelectList(await db.stores.ToListAsync(), "store_id", "store_name", staff.store_id);
+            ViewBag.manager_id = new SelectList(await db.staffs.OrderBy(s => s.last_name).ToListAsync(), "staff_id", "last_name", staff.manager_id);
+
+            Response.StatusCode = (int)HttpStatusCode.OK; // Critical: Forces 200 status for AJAX to read the HTML response
+            return PartialView("_EditPartial", staff);
         }
 
-        // Delete staff member
+        [HttpGet]
+        public async Task<ActionResult> StaffDeletePartial(int id)
+        {
+            var staff = await db.staffs
+                .Include(s => s.stores)
+                .Include(s => s.staffs2)
+                .SingleOrDefaultAsync(s => s.staff_id == id);
+
+            if (staff == null)
+            {
+                return HttpNotFound("Staff member not found for deletion.");
+            }
+
+            return PartialView("_DeletePartial", staff); // Note the expected partial view name
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> DeleteStaff(int id)
+        public async Task<ActionResult> DeleteStaff(int staff_id)
         {
+            var staff = await db.staffs.FindAsync(staff_id);
+
+            if (staff == null)
+            {
+                return Json(new { success = false, message = "Staff member not found." });
+            }
+
+            // Check for dependent records (example check)
+            var dependentStaffCount = await db.staffs.CountAsync(s => s.manager_id == staff_id);
+            var ordersCount = await db.orders.CountAsync(o => o.staff_id == staff_id);
+
+            if (dependentStaffCount > 0 || ordersCount > 0)
+            {
+                return Json(new { success = false, message = $"Cannot delete. This staff member manages {dependentStaffCount} other staff and is linked to {ordersCount} orders." });
+            }
+
             try
             {
-                var staff = await db.staffs.FindAsync(id);
-                if (staff == null)
-                {
-                    return Json(new { success = false, message = "Staff member not found." });
-                }
-
-                // Check for dependent records
-                var ordersCount = await db.orders.CountAsync(o => o.staff_id == id);
-                if (ordersCount > 0)
-                {
-                    return Json(new { success = false, message = $"Cannot delete. This staff member has {ordersCount} related orders." });
-                }
-
                 db.staffs.Remove(staff);
                 await db.SaveChangesAsync();
-
-                // ADDED REDIRECT URL
-                return Json(new { success = true, message = $"Staff member ID {id} deleted successfully.", redirectUrl = Url.Action("Maintain", "Home") });
+                TempData["Message"] = $"Staff member **{staff.first_name} {staff.last_name}** (ID: {staff.staff_id}) deleted successfully.";
+                TempData["MessageClass"] = "alert-success";
+                return Json(new { success = true, redirectUrl = Url.Action("Maintain", "Home") });
             }
             catch (Exception ex)
             {
@@ -657,6 +663,21 @@ namespace u24637646_HW03.Controllers
         }
 
         // CUSTOMER CRUD OPERATIONS
+
+        [HttpGet]
+        public async Task<ActionResult> CustomerEditPartial(int id)
+        {
+            // Ensure you are using the correct model (u24637646_HW03.Models.customers)
+            var customer = await db.customers.FindAsync(id);
+
+            if (customer == null)
+            {
+                return HttpNotFound("Customer not found.");
+            }
+
+            // NOTE: Ensure your partial view is named _CustomerEditPartial.cshtml
+            return PartialView("_EditPartial", customer);
+        }
 
         // Get customer data for editing
         [HttpGet]
@@ -688,84 +709,73 @@ namespace u24637646_HW03.Controllers
         // Update customer
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> UpdateCustomer(CustomerViewModel model)
+        public async Task<ActionResult> UpdateCustomer(u24637646_HW03.Models.customers customer)
         {
             if (ModelState.IsValid)
             {
-                var customer = await db.customers.FindAsync(model.customer_id);
-
-                if (customer == null)
-                {
-                    return Json(new { success = false, message = "Customer not found." });
-                }
-
-                // Update properties
-                customer.first_name = model.first_name;
-                customer.last_name = model.last_name;
-                customer.email = model.email;
-                customer.phone = model.phone;
-                customer.street = model.street;
-                customer.city = model.city;
-                customer.state = model.state;
-                customer.zip_code = model.zip_code;
-
                 db.Entry(customer).State = EntityState.Modified;
 
                 try
                 {
                     await db.SaveChangesAsync();
-
-                    var updatedCustomer = new CustomerViewModel
-                    {
-                        customer_id = customer.customer_id,
-                        first_name = customer.first_name,
-                        last_name = customer.last_name,
-                        email = customer.email,
-                        phone = customer.phone,
-                        street = customer.street,
-                        city = customer.city,
-                        state = customer.state,
-                        zip_code = customer.zip_code
-                    };
-
-                    // ADDED REDIRECT URL
-                    return Json(new { success = true, message = $"Customer '{model.first_name} {model.last_name}' updated successfully.", data = updatedCustomer, redirectUrl = Url.Action("Maintain", "Home") });
+                    TempData["Message"] = $"Customer {customer.first_name} {customer.last_name} (ID: {customer.customer_id}) updated successfully.";
+                    TempData["MessageClass"] = "alert-success";
+                    // Return JSON success object for JavaScript to handle redirect
+                    return Json(new { success = true, redirectUrl = Url.Action("Maintain", "Home") });
                 }
                 catch (Exception ex)
                 {
+                    // If DB save fails (e.g., unexpected error)
                     return Json(new { success = false, message = $"Update failed: {ex.Message}" });
                 }
             }
 
-            var errors = ModelState.Where(x => x.Value.Errors.Any()).Select(x => new { x.Key, x.Value.Errors }).ToList();
-            return Json(new { success = false, message = "Validation failed.", errors = errors });
+            // IF VALIDATION FAILS (The FIX): Return the HTML partial view with error messages
+            Response.StatusCode = (int)HttpStatusCode.OK; // Critical: Forces 200 status for AJAX script to read the content
+            return PartialView("_EditPartial", customer);
+        }
+
+        [HttpGet]
+        public async Task<ActionResult> CustomerDeletePartial(int id)
+        {
+            var customer = await db.customers.FindAsync(id);
+
+            if (customer == null)
+            {
+                return HttpNotFound("Customer not found for deletion.");
+            }
+
+            // NOTE: Ensure your partial view is named _CustomerDeletePartial.cshtml
+            return PartialView("_DeletePartial", customer);
         }
 
         // Delete customer
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> DeleteCustomer(int id)
+        public async Task<ActionResult> DeleteCustomer(int customer_id)
         {
+            var customer = await db.customers.FindAsync(customer_id);
+
+            if (customer == null)
+            {
+                return Json(new { success = false, message = "Customer not found." });
+            }
+
+            // Check for dependent records (e.g., orders)
+            var ordersCount = await db.orders.CountAsync(o => o.customer_id == customer_id);
+
+            if (ordersCount > 0)
+            {
+                return Json(new { success = false, message = $"Cannot delete. This customer has {ordersCount} related orders and cannot be removed." });
+            }
+
             try
             {
-                var customer = await db.customers.FindAsync(id);
-                if (customer == null)
-                {
-                    return Json(new { success = false, message = "Customer not found." });
-                }
-
-                // Check for dependent orders
-                var ordersCount = await db.orders.CountAsync(o => o.customer_id == id);
-                if (ordersCount > 0)
-                {
-                    return Json(new { success = false, message = $"Cannot delete. Customer has {ordersCount} related orders." });
-                }
-
                 db.customers.Remove(customer);
                 await db.SaveChangesAsync();
-
-                // ADDED REDIRECT URL
-                return Json(new { success = true, message = $"Customer ID {id} deleted successfully.", redirectUrl = Url.Action("Maintain", "Home") });
+                TempData["Message"] = $"Customer {customer.first_name} {customer.last_name} (ID: {customer.customer_id}) deleted successfully.";
+                TempData["MessageClass"] = "alert-success";
+                return Json(new { success = true, redirectUrl = Url.Action("Maintain", "Home") });
             }
             catch (Exception ex)
             {
@@ -774,6 +784,24 @@ namespace u24637646_HW03.Controllers
         }
 
         // PRODUCT CRUD OPERATIONS
+
+        [HttpGet]
+        public async Task<ActionResult> ProductEditPartial(int id)
+        {
+            var product = await db.products.FindAsync(id);
+
+            if (product == null)
+            {
+                return HttpNotFound("Product not found.");
+            }
+
+            // Populate dropdowns for brands and categories
+            ViewBag.brand_id = new SelectList(await db.brands.ToListAsync(), "brand_id", "brand_name", product.brand_id);
+            ViewBag.category_id = new SelectList(await db.categories.ToListAsync(), "category_id", "category_name", product.category_id);
+
+            // NOTE: Ensure your partial view is named _ProductEditPartial.cshtml
+            return PartialView("_EditPartial", product);
+        }
 
         // Get product data for editing
         [HttpGet]
@@ -802,81 +830,75 @@ namespace u24637646_HW03.Controllers
         // Update product
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> UpdateProduct(ProductViewModel model)
+        public async Task<ActionResult> UpdateProduct(u24637646_HW03.Models.products product)
         {
             if (ModelState.IsValid)
             {
-                var product = await db.products.FindAsync(model.product_id);
-
-                if (product == null)
-                {
-                    return Json(new { success = false, message = "Product not found." });
-                }
-
-                // Update properties
-                product.product_name = model.product_name;
-                product.model_year = model.model_year;
-                product.list_price = model.list_price;
-                product.brand_id = model.brand_id;
-                product.category_id = model.category_id;
-
                 db.Entry(product).State = EntityState.Modified;
 
                 try
                 {
                     await db.SaveChangesAsync();
-
-                    // Return updated data for UI refresh
-                    var updatedProduct = await db.products
-                        .Include(p => p.brands).Include(p => p.categories).Include(p => p.stocks)
-                        .Where(p => p.product_id == model.product_id)
-                        .Select(p => new ProductViewModel
-                        {
-                            product_id = p.product_id,
-                            product_name = p.product_name,
-                            model_year = p.model_year,
-                            list_price = p.list_price,
-                            brand_name = p.brands.brand_name,
-                            category_name = p.categories.category_name,
-                            TotalStock = p.stocks.Sum(st => (int?)st.quantity) ?? 0
-                        })
-                        .FirstOrDefaultAsync();
-
-                    // ADDED REDIRECT URL
-                    return Json(new { success = true, message = $"Product '{model.product_name}' updated successfully.", data = updatedProduct, redirectUrl = Url.Action("Maintain", "Home") });
+                    TempData["Message"] = $"Product {product.product_name} (ID: {product.product_id}) updated successfully.";
+                    TempData["MessageClass"] = "alert-success";
+                    // Return JSON success object for JavaScript to handle redirect
+                    return Json(new { success = true, redirectUrl = Url.Action("Maintain", "Home") });
                 }
                 catch (Exception ex)
                 {
+                    // If DB save fails (e.g., unexpected error)
                     return Json(new { success = false, message = $"Update failed: {ex.Message}" });
                 }
             }
 
-            var errors = ModelState.Where(x => x.Value.Errors.Any()).Select(x => new { x.Key, x.Value.Errors }).ToList();
-            return Json(new { success = false, message = "Validation failed.", errors = errors });
+            // IF VALIDATION FAILS (The FIX): Regenerate dropdowns and return the HTML partial view
+            ViewBag.brand_id = new SelectList(await db.brands.ToListAsync(), "brand_id", "brand_name", product.brand_id);
+            ViewBag.category_id = new SelectList(await db.categories.ToListAsync(), "category_id", "category_name", product.category_id);
+
+            Response.StatusCode = (int)HttpStatusCode.OK; // Critical: Forces 200 status for AJAX script
+            return PartialView("_EditPartial", product);
+        }
+
+        [HttpGet]
+        public async Task<ActionResult> ProductDeletePartial(int id)
+        {
+            var product = await db.products
+                .Include(p => p.brands) // Eager load for display
+                .Include(p => p.categories) // Eager load for display
+                .SingleOrDefaultAsync(p => p.product_id == id);
+
+            if (product == null)
+            {
+                return HttpNotFound("Product not found for deletion.");
+            }
+
+            // NOTE: Ensure your partial view is named _ProductDeletePartial.cshtml
+            return PartialView("_DeletePartial", product);
         }
 
         // NEWLY ADDED: Delete product
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> DeleteProduct(int id)
+        public async Task<ActionResult> DeleteProduct(int product_id)
         {
+            var product = await db.products.FindAsync(product_id);
+
+            if (product == null)
+            {
+                return Json(new { success = false, message = "Product not found." });
+            }
+
+            // Check for dependent records (order_items)
+            var orderItemsCount = await db.order_items.CountAsync(oi => oi.product_id == product_id);
+            if (orderItemsCount > 0)
+            {
+                return Json(new { success = false, message = $"Cannot delete. This product has {orderItemsCount} related order items." });
+            }
+
             try
             {
-                var product = await db.products.FindAsync(id);
-                if (product == null)
-                {
-                    return Json(new { success = false, message = "Product not found." });
-                }
-
-                // Check for dependent records (order_items)
-                var orderItemsCount = await db.order_items.CountAsync(oi => oi.product_id == id);
-                if (orderItemsCount > 0)
-                {
-                    return Json(new { success = false, message = $"Cannot delete. This product has {orderItemsCount} related order items." });
-                }
-
-                // Handle related 'stocks' records (assuming they must be deleted first)
-                var stocks = await db.stocks.Where(s => s.product_id == id).ToListAsync();
+                // Handle related 'stocks' records explicitly before deleting the product
+                var stocks = await db.stocks.Where(s => s.product_id == product_id).ToListAsync();
                 if (stocks.Any())
                 {
                     db.stocks.RemoveRange(stocks);
@@ -884,9 +906,9 @@ namespace u24637646_HW03.Controllers
 
                 db.products.Remove(product);
                 await db.SaveChangesAsync();
-
-                // ADDED REDIRECT URL
-                return Json(new { success = true, message = $"Product ID {id} deleted successfully.", redirectUrl = Url.Action("Maintain", "Home") });
+                TempData["Message"] = $"Product **{product.product_name}** (ID: {product.product_id}) deleted successfully.";
+                TempData["MessageClass"] = "alert-success";
+                return Json(new { success = true, redirectUrl = Url.Action("Maintain", "Home") });
             }
             catch (Exception ex)
             {

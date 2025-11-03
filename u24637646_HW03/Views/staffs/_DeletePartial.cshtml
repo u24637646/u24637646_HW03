@@ -1,9 +1,7 @@
 ﻿@model u24637646_HW03.Models.staffs
 
 <link href="~/Content/_DataStyleSheet.css" rel="stylesheet" type="text/css" />
-@* NOTE: This partial view assumes the model has related entities (stores, staffs2) loaded via Include() in the controller if you are displaying properties like store_name.
-    If not, you should use a ViewModel that includes the string properties, or ensure the loading action is robust.
-*@
+
 <div>
     <h4>Are you sure you want to delete this staff member?</h4>
     <hr />
@@ -42,8 +40,6 @@
         <dd>
             @(Model.active == 1 ? "Yes" : "No")
         </dd>
-
-        @* Displaying related data (Manager Name, Store Name) - requires eager loading in the controller *@
         <dt>
             @Html.DisplayNameFor(model => model.stores.store_name)
         </dt>

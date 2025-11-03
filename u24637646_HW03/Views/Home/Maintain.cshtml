@@ -51,42 +51,43 @@
                     </select>
                 </div>
 
-                <div class="panel-body text-center" id="staff-panel-body">
+                <div class="panel-body text-center">
                     @if (Model.StaffsList != null && Model.StaffsList.Any())
                     {
-                        for (int i = 0; i < Model.StaffsList.Count(); i++)
-                        {
-                            var staff = Model.StaffsList.ElementAt(i);
+                        var initialStaff = Model.StaffsList.OrderBy(s => s.last_name).First();
 
-                            @* CRITICAL: Store all staff data in JavaScript for client-side search/display updates *@
-                            <script>
-                                entityDataMap['staff'] = entityDataMap['staff'] || {};
-                                entityDataMap['staff'][@staff.staff_id] = {
-                                    id: @staff.staff_id,
-                                    name: '@staff.first_name @staff.last_name',
-                                    email: '@staff.email',
-                                    phone: '@staff.phone',
-                                    store: '@staff.store_name',
-                                    manager: '@staff.manager_name'
-                                };
-                                // Set initial display ID to the first item
-                                if (@i == 0) { currentDisplayId['staff'] = @staff.staff_id; }
-                            </script>
+                        @* CRITICAL: Serialize all Staff data into JavaScript for client-side search/display updates *@
+                        <script>
+                            entityDataMap['staff'] = entityDataMap['staff'] || {};
+                            // Use C# to generate a JSON array, then map it in JS to avoid serialization issues
+                            var rawStaffs = @Html.Raw(Json.Encode(Model.StaffsList.Select(s => new {
+                                id = s.staff_id,
+                                name = s.first_name + " " + s.last_name,
+                                email = s.email,
+                                phone = s.phone,
+                                store = s.store_name,
+                                manager = s.manager_name
+                            })));
 
-                            @* Initial Display Content *@
-                            <div class="detail-item staff-item" id="staff-detail-container" style="display: @(i == 0 ? "block" : "none");">
-                                <h4 class="text-center">@staff.first_name @staff.last_name</h4>
-                                <p>Email: <strong id="staff-email">@staff.email</strong></p>
-                                <p>Phone: <strong id="staff-phone">@staff.phone</strong></p>
-                                <p>Store: <strong id="staff-store">@staff.store_name</strong></p>
-                                <p>Manager: <strong id="staff-manager">@staff.manager_name</strong></p>
+                            rawStaffs.forEach(function(item) {
+                                entityDataMap['staff'][item.id] = item;
+                            });
 
-                            </div>
-                        }
+                            currentDisplayId['staff'] = @initialStaff.staff_id; // Set initial ID for pre-selection
+                        </script>
+
+                        @* Single container for dynamic detail content, populated by JS on load *@
+                        <div id="staff-detail-container">
+                            <p class="text-info">Select a staff record or use the search box.</p>
+                        </div>
+                        @* Hidden input to track the currently displayed record ID for Edit/Delete actions *@
+                        <input type="hidden" id="staff-current-id" value="@initialStaff.staff_id" />
                     }
                     else
                     {
-                        <p class="text-danger">No staff records found.</p>
+                        <div id="staff-detail-container">
+                            <p class="text-danger">No staff records found.</p>
+                        </div>
                         <input type="hidden" id="staff-current-id" value="0" />
                     }
                 </div>
@@ -94,7 +95,7 @@
                 @* Panel Footer: Search and Action Buttons *@
                 <div class="panel-footer staff-navigator panel-navigator text-center">
                     <div class="input-group input-group-sm search-group">
-                        <input id="staff-search-input" type="text" class="form-control text-center rounded"  placeholder="--- Search Name/ID ---" />
+                        <input id="staff-search-input" type="text" class="form-control text-center rounded" placeholder="--- Search Name/ID ---" />
                         <span class="input-group-btn">
                             <button class="btn btn-default" type="button" onclick="filterAndDisplay('staff')">
                                 <i class="glyphicon glyphicon-search">>>></i>
@@ -133,40 +134,44 @@
                         }
                     </select>
                 </div>
-                <div class="panel-body text-center" id="customer-panel-body">
+                <div class="panel-body text-center">
                     @if (Model.CustomersList != null && Model.CustomersList.Any())
                     {
-                        for (int i = 0; i < Model.CustomersList.Count(); i++)
-                        {
-                            var customer = Model.CustomersList.ElementAt(i);
-                            <script>
-                                entityDataMap['customer'] = entityDataMap['customer'] || {};
-                                entityDataMap['customer'][@customer.customer_id] = {
-                                    id: @customer.customer_id,
-                                    name: '@customer.first_name @customer.last_name',
-                                    email: '@customer.email',
-                                    phone: '@customer.phone',
-                                    city: '@customer.city',
-                                    state: '@customer.state',
-                                    street: '@customer.street',
-                                    zip: '@customer.zip_code'
-                                };
-                                if (@i == 0) { currentDisplayId['customer'] = @customer.customer_id; }
-                            </script>
+                        var initialCustomer = Model.CustomersList.OrderBy(c => c.last_name).First();
 
-                            <div class="detail-item customer-item" id="customer-detail-container" style="display: @(i == 0 ? "block" : "none");">
-                                <h4 class="text-center">@customer.first_name @customer.last_name</h4>
-                                <p>Email: <strong id="customer-email">@customer.email</strong></p>
-                                <p>Phone: <strong id="customer-phone">@customer.phone</strong></p>
-                                <p>Location: <strong id="customer-location">@customer.city, @customer.state</strong></p>
-                                <p>Street: <strong id="customer-street">@customer.street</strong></p>
-                                <p>Zip: <strong id="customer-zip">@customer.zip_code</strong></p>
-                            </div>
-                        }
+                        @* CRITICAL: Serialize all Customer data into JavaScript for client-side search/display updates *@
+                        <script>
+                            entityDataMap['customer'] = entityDataMap['customer'] || {};
+                            var rawCustomers = @Html.Raw(Json.Encode(Model.CustomersList.Select(c => new {
+                                id = c.customer_id,
+                                name = c.first_name + " " + c.last_name,
+                                email = c.email,
+                                phone = c.phone,
+                                city = c.city,
+                                state = c.state,
+                                street = c.street,
+                                zip = c.zip_code
+                            })));
+
+                            rawCustomers.forEach(function(item) {
+                                entityDataMap['customer'][item.id] = item;
+                            });
+
+                            currentDisplayId['customer'] = @initialCustomer.customer_id; // Set initial ID for pre-selection
+                        </script>
+
+                        @* Single container for dynamic detail content, populated by JS on load *@
+                        <div id="customer-detail-container">
+                            <p class="text-info">Select a customer record or use the search box.</p>
+                        </div>
+                        @* Hidden input to track the currently displayed record ID for Edit/Delete actions *@
+                        <input type="hidden" id="customer-current-id" value="@initialCustomer.customer_id" />
                     }
                     else
                     {
-                        <p class="text-danger">No customer records found.</p>
+                        <div id="customer-detail-container">
+                            <p class="text-danger">No customer records found.</p>
+                        </div>
                         <input type="hidden" id="customer-current-id" value="0" />
                     }
                 </div>
@@ -213,54 +218,48 @@
                     </select>
 
                 </div>
-                <div class="panel-body text-center" id="product-panel-body">
+                <div class="panel-body text-center">
 
-              
                     @if (Model.ProductsList != null && Model.ProductsList.Any())
                     {
-                        for (int i = 0; i < Model.ProductsList.Count(); i++)
-                        {
-                            var product = Model.ProductsList.ElementAt(i);
-                            // --- Placeholder for Image Path ---
-                            // Assuming image path logic (adjust this to your actual image naming convention)
-                            var brandBaseName = product.brand_name.Split(' ')[0];
-                            var imageUrl = Url.Content("~/Images/" + brandBaseName + "1.jpeg");
-                            // --- End Image Path Placeholder ---
+                        var initialProduct = Model.ProductsList.OrderBy(p => p.product_name).First();
 
-                            <script>
-                                entityDataMap['product'] = entityDataMap['product'] || {};
-                                entityDataMap['product'][@product.product_id] = {
-                                    id: @product.product_id,
-                                    name: '@product.product_name',
-                                    brand: '@product.brand_name',
-                                    category: '@product.category_name',
-                                    year: '@product.model_year',
-                                    price: '@product.list_price.ToString("C")',
-                                    stock: '@product.TotalStock',
-                                    imageUrl: '@imageUrl' // Storing the dynamic image URL
-                                };
-                                if (@i == 0) { currentDisplayId['product'] = @product.product_id; }
-                            </script>
+                        @* CRITICAL: Serialize all Product data into JavaScript for client-side search/display updates *@
+                        <script>
+                            entityDataMap['product'] = entityDataMap['product'] || {};
 
-                            <div class="detail-item product-item " id="product-detail-container" style="display: @(i == 0 ? "block" : "none");">
-                                <h4 class="text-center">@product.product_name</h4>
+                            // Re-calculate the image URL for all products during serialization
+                            var rawProducts = @Html.Raw(Json.Encode(Model.ProductsList.Select(p => new {
+                                id = p.product_id,
+                                name = p.product_name,
+                                brand = p.brand_name,
+                                category = p.category_name,
+                                year = p.model_year,
+                                price = p.list_price.ToString("C"),
+                                stock = p.TotalStock,
+                                // Calculate URL here using C# Url.Content helper
+                                imageUrl = Url.Content("~/Images/" + p.brand_name.Split(' ')[0] + "1.jpeg")
+                            })));
 
-                                @* IMAGE CONTAINER *@
-                                <div class="image-container">
-                                    <img id="product-image" src="@imageUrl" alt="@product.product_name" style="max-width: 100%; height: auto; margin-bottom: 10px;" />
-                                </div>
+                            rawProducts.forEach(function(item) {
+                                entityDataMap['product'][item.id] = item;
+                            });
 
-                                <p>Brand: <strong id="product-brand">@product.brand_name</strong></p>
-                                <p>Category: <strong id="product-category">@product.category_name</strong></p>
-                                <p>Model Year: <strong id="product-year">@product.model_year</strong></p>
-                                <p>Price: <strong id="product-price">@product.list_price.ToString("C")</strong></p>
-                                <p>Total Stock: <strong id="product-stock">@product.TotalStock</strong></p>
-                            </div>
-                        }
+                            currentDisplayId['product'] = @initialProduct.product_id; // Set initial ID for pre-selection
+                        </script>
+
+                        @* Single container for dynamic detail content, populated by JS on load *@
+                        <div id="product-detail-container">
+                            <p class="text-info">Select a product record or use the search box.</p>
+                        </div>
+                        @* Hidden input to track the currently displayed record ID for Edit/Delete actions *@
+                        <input type="hidden" id="product-current-id" value="@initialProduct.product_id" />
                     }
                     else
                     {
-                        <p class="text-danger">No product records found.</p>
+                        <div id="product-detail-container">
+                            <p class="text-danger">No product records found.</p>
+                        </div>
                         <input type="hidden" id="product-current-id" value="0" />
                     }
                 </div>
@@ -293,7 +292,6 @@
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     <h4 class="modal-title" id="maintainStaffModalTitle">Staff Maintenance</h4>
                 </div>
                 <div class="modal-body" id="maintainStaffModalBody">
@@ -307,7 +305,6 @@
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     <h4 class="modal-title" id="maintainCustomerModalTitle">Customer Maintenance</h4>
                 </div>
                 <div class="modal-body" id="maintainCustomerModalBody">
@@ -321,7 +318,6 @@
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     <h4 class="modal-title" id="maintainProductModalTitle">Product Maintenance</h4>
                 </div>
                 <div class="modal-body" id="maintainProductModalBody">
@@ -338,4 +334,22 @@
     @Scripts.Render("~/bundles/jqueryval")
     @* This is the critical script that drives the maintenance logic *@
     <script src="@Url.Content("~/Scripts/_MaintainScripts.js")"></script>
+
+    @* 🚀 Initialization Script: Calls updatePanelDisplay to show the first record after the page loads and the data map is populated. *@
+    <script>
+        $(document).ready(function () {
+            // Loop through all defined entities to display the initial item
+            ['staff', 'customer', 'product'].forEach(function (entity) {
+                var currentId = currentDisplayId[entity];
+
+                // Only attempt to display if there is a valid initial ID set by C#
+                if (currentId > 0 && entityDataMap[entity] && entityDataMap[entity][currentId]) {
+                    // Call the JS function to render the initial details using the first record's data
+                    updatePanelDisplay(entity, entityDataMap[entity][currentId]);
+                    // Also update the dropdown to match the selected item
+                    $('#' + entity + '-name-selector').val(currentId);
+                }
+            });
+        });
+    </script>
 }

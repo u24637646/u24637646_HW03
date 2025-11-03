@@ -1,15 +1,13 @@
-﻿// ==================================================================================
-// _IndexScripts.js - Fixed Structure
-// ==================================================================================
-
+﻿// This script manages the dashboard view, including the carousel and modal forms for creating staff and customers.
 
 // ------------------------------------------------------------------
-// Helper function to update "View Details" link
+// Updates the 'View Details' link to point to the current record being displayed in the carousel.
 // ------------------------------------------------------------------
 function updateDetailsLink(type, dbId) {
     var $link = $('#' + type + '-details-link');
     if ($link.length > 0) {
         var currentHref = $link.attr('href');
+        
         // Safely replace the ID part of the URL (assuming /Controller/Details/ID)
         // Ensure a fall-back if href is initially empty or just /Controller/Details
         var newHref = currentHref ? currentHref.replace(/\/[0-9]+$/, '/' + dbId) : ('/' + type + 's/Details/' + dbId);
@@ -18,12 +16,13 @@ function updateDetailsLink(type, dbId) {
 }
 
 // ------------------------------------------------------------------
-// Carousel Navigation Function (Panel Change Logic Only)
+// Handles the primary navigation logic for moving between items in the carousels.
 // ------------------------------------------------------------------
 function navigate(type, direction) {
     var indexInput = $('#' + type + '-index');
     var currentIdx = parseInt(indexInput.val());
-    // Get total count from the hidden element
+    
+    // Get the total number of items available from a hidden input.
     var totalCount = parseInt($('#' + type + '-count').val());
     var lastIndex = totalCount - 1;
 
@@ -33,11 +32,11 @@ function navigate(type, direction) {
 
     // --- Boundary and Wrapping Logic ---
 
-    // Case 1: Wrap forward (from last item to first)
+    // If we move past the last item, wrap back to the beginning (index 0).
     if (newIdx > lastIndex) {
         newIdx = 0;
     }
-    // Case 2: Wrap backward (from first item to last)
+    // If we move before the first item, wrap around to the end (the last index).
     else if (newIdx < 0) {
         newIdx = lastIndex;
     }
@@ -47,25 +46,26 @@ function navigate(type, direction) {
         var $newItem = $('#' + type + '-' + newIdx);
         $newItem.fadeIn(200);
 
-        // Ensure the ID attribute is correct (e.g., data-staff-id)
+        // Retrieve the unique database ID for the newly visible item.
         var dbId = $newItem.data(type + '-id');
 
-        // REMOVED: Counter update logic is no longer needed.
+        // Not needed for this iteration of the code.
 
-        // Update the ActionLink
+        // Update the 'View Details' link's destination URL.
         updateDetailsLink(type, dbId);
     });
 
-    // Update the hidden index input for the next navigation call
+    // Save the new index so the next call knows where to start.
     indexInput.val(newIdx);
 }
 
 // ------------------------------------------------------------------
-// Document Ready - Initialization and Modal Logic
+// Executes once the page is fully loaded, setting up event handlers and initial state.
 // ------------------------------------------------------------------
 $(document).ready(function () {
 
     // --- Modal Closing Logic ---
+    // Universal handler to close any modal when its dedicated close button is clicked.
     $(document).on('click', '.modal-close-btn', function () {
         var $currentModal = $(this).closest('.modal');
         if ($currentModal.length) {
@@ -74,11 +74,12 @@ $(document).ready(function () {
     });
 
     // --- Initialization of Panels ---
-    // Initialize all three panels: set initial details link
+    // Initial setup for the Staff, Customer, and Product carousels.
     ['staff', 'customer', 'product'].forEach(function (type) {
         var initialItem = $('#' + type + '-0');
         var totalCount = parseInt($('#' + type + '-count').val() || '0');
 
+        // Skip initialization if no records are available for this entity.
         if (totalCount === 0) {
             return;
         }
@@ -87,18 +88,20 @@ $(document).ready(function () {
             var initialId = initialItem.data(type + '-id');
 
             if (initialId) {
-                // REMOVED: Counter initialization is no longer needed.
+                // Not needed for this iteration of the code.
                 updateDetailsLink(type, initialId);
             }
         }
     });
 
     // --- Product Filter: Submit form on dropdown change ---
+    // Automatically submits the product filter form whenever the brand or category dropdown value changes.
     $('#brand-filter, #category-filter').on('change', function () {
         $('.product-filter-form').submit();
     });
 
     // --- Staff Modal Logic ---
+    // Handles the button click to load the Staff creation form into a modal via AJAX.
     $('#createStaffBtn').click(function () {
         $.ajax({
             url: '/Staffs/CreatePartial',
@@ -107,14 +110,19 @@ $(document).ready(function () {
             success: function (data) {
                 $('#staffModalBody').html(data);
                 $('#createStaffModal').modal('show');
+                
+                // Re-parse the validation rules since the form content was loaded dynamically.
                 $.validator.unobtrusive.parse('#staffModalBody');
             }
         });
     });
 
+    // Universal submit handler for the staff creation form (delegated).
     $(document).on('submit', '#createStaffForm', function (e) {
         e.preventDefault();
         var form = $(this);
+        
+        // Stop execution if client-side validation detects errors.
         if (!form.valid()) return false;
 
         $.ajax({
@@ -136,6 +144,7 @@ $(document).ready(function () {
                 }
             },
             error: function (xhr) {
+                // Handles server response when it returns the form with validation errors (HTTP 200).
                 if (xhr.status === 200 && xhr.responseText.indexOf('form-group') > -1) {
                     $('#staffModalBody').html(xhr.responseText);
                     $.validator.unobtrusive.parse('#staffModalBody');
@@ -147,11 +156,13 @@ $(document).ready(function () {
         return false;
     });
 
+    // Cleans out the modal content when the modal is fully hidden.
     $('#createStaffModal').on('hidden.bs.modal', function () {
         $('#staffModalBody').empty();
     });
 
     // --- Customer Modal Logic ---
+    // Handles the button click to load the Customer creation form into a modal via AJAX.
     $('#createCustomerBtn').click(function () {
         $.ajax({
             url: '/Customers/CreatePartial',
@@ -160,14 +171,19 @@ $(document).ready(function () {
             success: function (data) {
                 $('#customerModalBody').html(data);
                 $('#createCustomerModal').modal('show');
+                
+                // Re-parse the validation rules since the form content was loaded dynamically.
                 $.validator.unobtrusive.parse('#customerModalBody');
             }
         });
     });
 
+    // Universal submit handler for the customer creation form (delegated).
     $(document).on('submit', '#createCustomerForm', function (e) {
         e.preventDefault();
         var form = $(this);
+        
+        // Stop execution if client-side validation detects errors.
         if (!form.valid()) return false;
 
         $.ajax({
@@ -189,6 +205,7 @@ $(document).ready(function () {
                 }
             },
             error: function (xhr) {
+                // Handles server response when it returns the form with validation errors (HTTP 200).
                 if (xhr.status === 200 && xhr.responseText.indexOf('form-group') > -1) {
                     $('#customerModalBody').html(xhr.responseText);
                     $.validator.unobtrusive.parse('#customerModalBody');
@@ -200,12 +217,13 @@ $(document).ready(function () {
         return false;
     });
 
+    // Cleans out the modal content when the modal is fully hidden.
     $('#createCustomerModal').on('hidden.bs.modal', function () {
         $('#customerModalBody').empty();
     });
 });
 
-// Function to handle the AJAX form submission and modal management
+// This function handles the general modal management for Edit/Delete actions in the 'Maintain' section.
 var modalManagement = function () {
 
     // 1. Handlers for loading partial views into the modal
@@ -213,18 +231,20 @@ var modalManagement = function () {
         e.preventDefault();
         var url = $(this).attr('href');
 
-        // Load the partial view into the modal body
+        // Use AJAX to fetch and insert the partial view (form content) into the modal body.
         $('#modalBodyContent').load(url, function () {
-            // Re-parse validation rules (crucial for partial views)
+            
+            // Re-parse the validation rules since the form content was loaded dynamically.
             $.validator.unobtrusive.parse('#modalBodyContent');
 
-            // Show the modal
+            // Show the modal.
             $('#myModal').modal('show');
 
-            // Check if it's a Create/Edit form being loaded
+            // Check if a form element was successfully loaded.
             var formId = $('#modalBodyContent').find('form').attr('id');
             if (formId) {
-                // Attach submit handler to the form once it's loaded
+                
+                // Hook up the form submission handler to manage the AJAX response.
                 attachFormSubmitHandler(formId);
             }
         });
@@ -234,11 +254,11 @@ var modalManagement = function () {
     function attachFormSubmitHandler(formId) {
         var formElement = $('#' + formId);
 
-        // Remove previous handler to prevent multiple executions
+        // Important: unbind any previous submit handler to prevent this logic from running multiple times.
         formElement.off('submit.ajaxForm').on('submit.ajaxForm', function (e) {
             e.preventDefault();
 
-            // Ensure client-side validation passes
+            // Verify the form is valid before attempting an AJAX submission.
             if (!formElement.valid()) {
                 return;
             }
@@ -252,19 +272,25 @@ var modalManagement = function () {
                 data: formData,
                 success: function (response) {
                     if (response.success) {
-                        // Success: Hide modal and redirect (or refresh)
+                        
+                        // On successful action, close the modal and redirect to the maintenance page.
                         $('#myModal').modal('hide');
+                        
                         // Redirect to 'Maintain' page which will show TempData message
                         window.location.href = response.redirectUrl || '@Url.Action("Maintain", "Home")';
                     } else if (response.message) {
-                        // Handle server-side errors that return JSON
+                        
+                        // If the server returns a JSON error object, display the message to the user.
                         alert('Error: ' + response.message);
                     } else {
-                        // Validation failed (server returns PartialView with errors)
+                        
+                        // If server-side model state failed, update the modal content with the form containing validation messages.
                         $('#modalBodyContent').html(response);
-                        // Re-parse validation rules for the updated content
+                        
+                        // Re-apply validation to the new form content.
                         $.validator.unobtrusive.parse('#modalBodyContent');
-                        // Re-attach the submit handler to the new form content
+                        
+                        // Re-attach the handler since the form content was replaced.
                         attachFormSubmitHandler(formId);
                     }
                 },
@@ -276,6 +302,7 @@ var modalManagement = function () {
     }
 
     // 3. Delete confirmation handler (if implemented via modal)
+    // Handles click events for delete links, prompting the user for confirmation before executing an AJAX delete.
     $('.delete-link').click(function (e) {
         e.preventDefault();
         var deleteUrl = $(this).data('delete-url');
@@ -290,9 +317,11 @@ var modalManagement = function () {
                 data: { id: recordId, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
                 success: function (response) {
                     if (response.success) {
+                        
                         // Success: Redirect to 'Maintain' page
                         window.location.href = response.redirectUrl || '@Url.Action("Maintain", "Home")';
                     } else {
+                        
                         // Failure: Show error message
                         alert('Deletion failed: ' + response.message);
                     }
@@ -305,11 +334,12 @@ var modalManagement = function () {
     });
 
     // Handle modal closing: clean up content
+    // Cleans out the modal's body and footer every time it is closed.
     $('#myModal').on('hidden.bs.modal', function () {
         $('#modalBodyContent').empty();
         $('#modalFooterContent').empty();
     });
 };
 
-// Run the modal management logic when the document is ready
+// Execute the main modal management function on page load.
 $(document).ready(modalManagement);

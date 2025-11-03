@@ -79,7 +79,7 @@ namespace u24637646_HW03.Controllers
             {
                 try
                 {
-                    if (staff.active == null) staff.active = 0;
+                    if (staff.active == 0) staff.active = 0;
                     db.staffs.Add(staff);
                     await db.SaveChangesAsync();
 
@@ -141,7 +141,7 @@ namespace u24637646_HW03.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (staffs.active == null) staffs.active = 0;
+                if (staffs.active == 0) staffs.active = 0;
 
                 db.staffs.Add(staffs);
                 await db.SaveChangesAsync();
@@ -170,7 +170,7 @@ namespace u24637646_HW03.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (staffs.active == null) staffs.active = 0;
+                if (staffs.active == 0) staffs.active = 0;
 
                 db.Entry(staffs).State = EntityState.Modified;
                 await db.SaveChangesAsync();
