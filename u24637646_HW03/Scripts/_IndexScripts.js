@@ -1,5 +1,5 @@
 ﻿// ==================================================================================
-// _IndexScripts.js - REVISED (Jump by List Index)
+// _IndexScripts.js - Fixed Structure
 // ==================================================================================
 
 
@@ -11,7 +11,8 @@ function updateDetailsLink(type, dbId) {
     if ($link.length > 0) {
         var currentHref = $link.attr('href');
         // Safely replace the ID part of the URL (assuming /Controller/Details/ID)
-        var newHref = currentHref.replace(/\/[0-9]+$/, '/' + dbId);
+        // Ensure a fall-back if href is initially empty or just /Controller/Details
+        var newHref = currentHref ? currentHref.replace(/\/[0-9]+$/, '/' + dbId) : ('/' + type + 's/Details/' + dbId);
         $link.attr('href', newHref);
     }
 }
@@ -22,7 +23,8 @@ function updateDetailsLink(type, dbId) {
 function navigate(type, direction) {
     var indexInput = $('#' + type + '-index');
     var currentIdx = parseInt(indexInput.val());
-    var totalCount = parseInt($('#' + type + '-count').text());
+    // CRITICAL FIX: Get total count from the hidden element, which is correctly rendered in Razor
+    var totalCount = parseInt($('#' + type + '-count').val());
     var lastIndex = totalCount - 1;
 
     if (totalCount === 0) return;
@@ -45,10 +47,11 @@ function navigate(type, direction) {
         var $newItem = $('#' + type + '-' + newIdx);
         $newItem.fadeIn(200);
 
+        // Ensure the ID attribute is correct (e.g., data-staff-id)
         var dbId = $newItem.data(type + '-id');
 
-        // Update placeholder to the new INDEX (1-based), and clear input
-        $('#' + type + '-id-jump').attr('placeholder', newIdx + 1);
+        // Update placeholder and clear input
+        $('#' + type + '-id-jump').attr('placeholder', dbId);
         $('#' + type + '-id-jump').val('');
 
         // Update the ActionLink
@@ -59,74 +62,88 @@ function navigate(type, direction) {
 }
 
 // ------------------------------------------------------------------
-// Jump to Specific Index Function (REVISED to jump by List Index)
-// NOTE: Function name kept as jumpToId for compatibility with Razor
+// Jump to Specific ID Function (FIXED for Placeholder Usage and Map check)
 // ------------------------------------------------------------------
 function jumpToId(type) {
     var $input = $('#' + type + '-id-jump');
-    var inputVal = $input.val();
-    var totalCount = parseInt($('#' + type + '-count').text());
+    var inputId = $input.val();
+    var idToJump;
 
-    if (totalCount === 0) {
+    // --- 1. Determine the ID to jump to ---
+    // ... (logic remains correct)
+    if (inputId === null || inputId.trim() === '') {
+        var currentPlaceholder = $input.attr('placeholder');
+
+        if (currentPlaceholder && /^\d+$/.test(currentPlaceholder)) {
+            idToJump = parseInt(currentPlaceholder);
+        } else {
+            alert("Please enter a valid ID number.");
+            $input.val('');
+            return;
+        }
+    } else {
+        if (!/^\d+$/.test(inputId)) {
+            alert("Please enter a valid ID number.");
+            $input.val('');
+            return;
+        }
+        idToJump = parseInt(inputId);
+    }
+
+    // --- 2. Perform Lookup and Validation ---
+    if (typeof entityIdMap == 'undefined' || !entityIdMap[type]) {
+        console.error("entityIdMap or the map for type '" + type + "' is not initialized.");
+        alert("Navigation map is not ready. Please refresh the page.");
         $input.val('');
         return;
     }
 
-    // 1. Check for empty input (exit early)
-    if (inputVal === null || inputVal.trim() === '') {
+    var newIdx = entityIdMap[type][idToJump];
+
+    if (newIdx !== undefined) {
+        var indexInput = $('#' + type + '-index');
+        var currentIdx = parseInt(indexInput.val());
+
+        if (newIdx === currentIdx) {
+            $input.val('');
+            return;
+        }
+
+        // --- 3. Animation and Index Update ---
+        $('#' + type + '-' + currentIdx).fadeOut(100, function () {
+            var $newItem = $('#' + type + '-' + newIdx);
+            $newItem.fadeIn(200);
+
+            var dbId = $newItem.data(type + '-id');
+
+            $input.attr('placeholder', dbId);
+            $input.val('');
+
+            updateDetailsLink(type, dbId);
+        });
+
+        indexInput.val(newIdx);
+    } else {
+        alert(type.charAt(0).toUpperCase() + type.slice(1) + " ID " + idToJump + " not found in the current list.");
         $input.val('');
-        return;
     }
-
-    // 2. Validate input format (must be a number)
-    if (!/^\d+$/.test(inputVal)) {
-        alert("Please enter a valid list index number.");
-        $input.val('');
-        return;
-    }
-
-    // Input is 1-based (e.g., 1 to N), convert to 0-based
-    var jumpIndexOneBased = parseInt(inputVal);
-    var newIdx = jumpIndexOneBased - 1;
-
-    // 3. Validate input range
-    if (newIdx < 0 || newIdx >= totalCount) {
-        alert(type.charAt(0).toUpperCase() + type.slice(1) + " index " + jumpIndexOneBased + " is out of range (1 to " + totalCount + ").");
-        $input.val('');
-        return;
-    }
-
-    // 4. Perform Navigation
-    var indexInput = $('#' + type + '-index');
-    var currentIdx = parseInt(indexInput.val());
-
-    if (newIdx === currentIdx) {
-        $input.val('');
-        return;
-    }
-
-    $('#' + type + '-' + currentIdx).fadeOut(100, function () {
-        var $newItem = $('#' + type + '-' + newIdx);
-        $newItem.fadeIn(200);
-
-        var dbId = $newItem.data(type + '-id');
-
-        // Update placeholder to the new 1-based index
-        $input.attr('placeholder', newIdx + 1);
-        $input.val('');
-
-        updateDetailsLink(type, dbId);
-    });
-
-    indexInput.val(newIdx);
 }
 
 // ------------------------------------------------------------------
-// Document Ready - Initialization and Modal Logic
+// Document Ready - Initialization and Modal Logic (FIXED)
 // ------------------------------------------------------------------
 $(document).ready(function () {
 
-    // Initialize all three panels: set initial placeholder to index 1
+    // --- Modal Closing Logic ---
+    $(document).on('click', '.modal-close-btn', function () {
+        var $currentModal = $(this).closest('.modal');
+        if ($currentModal.length) {
+            $currentModal.modal('hide');
+        }
+    }); // <-- CRITICAL: This was the main closure error in the original file.
+
+    // --- Initialization of Panels ---
+    // Initialize all three panels: set initial placeholder and details link
     ['staff', 'customer', 'product'].forEach(function (type) {
         var initialItem = $('#' + type + '-0');
 
@@ -134,19 +151,18 @@ $(document).ready(function () {
             var initialId = initialItem.data(type + '-id');
 
             if (initialId) {
-                // Initialize placeholder to the first INDEX: 1
-                $('#' + type + '-id-jump').attr('placeholder', 1);
+                $('#' + type + '-id-jump').attr('placeholder', initialId);
                 updateDetailsLink(type, initialId);
             }
         }
     });
 
-    // Product Filter: Submit form on dropdown change
+    // --- Product Filter: Submit form on dropdown change ---
     $('#brand-filter, #category-filter').on('change', function () {
         $('.product-filter-form').submit();
     });
 
-    // --- Modal Popups for Staff Creation (Unchanged) ---
+    // --- Staff Modal Logic ---
     $('#createStaffBtn').click(function () {
         $.ajax({
             url: '/Staffs/CreatePartial',
@@ -175,7 +191,13 @@ $(document).ready(function () {
                     $('#createStaffModal').modal('hide');
                     window.location.href = result.redirectUrl;
                 } else {
-                    alert('An error occurred. Please try again.');
+                    // CRITICAL: Load returned partial view (with validation errors) on failure
+                    if (result.html) {
+                        $('#staffModalBody').html(result.html);
+                        $.validator.unobtrusive.parse('#staffModalBody');
+                    } else {
+                        alert('An error occurred. Please try again.');
+                    }
                 }
             },
             error: function (xhr) {
@@ -194,7 +216,7 @@ $(document).ready(function () {
         $('#staffModalBody').empty();
     });
 
-    // --- Modal Popups for Customer Creation (Unchanged) ---
+    // --- Customer Modal Logic ---
     $('#createCustomerBtn').click(function () {
         $.ajax({
             url: '/Customers/CreatePartial',
@@ -223,7 +245,13 @@ $(document).ready(function () {
                     $('#createCustomerModal').modal('hide');
                     window.location.href = result.redirectUrl;
                 } else {
-                    alert('An error occurred. Please try again.');
+                    // CRITICAL: Load returned partial view (with validation errors) on failure
+                    if (result.html) {
+                        $('#customerModalBody').html(result.html);
+                        $.validator.unobtrusive.parse('#customerModalBody');
+                    } else {
+                        alert('An error occurred. Please try again.');
+                    }
                 }
             },
             error: function (xhr) {

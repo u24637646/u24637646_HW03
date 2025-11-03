@@ -4,15 +4,12 @@
     ViewBag.Title = "Maintain Records";
 }
 
-<head>
-    @* Ensure this path is correct for your custom styles *@
-    <link rel="stylesheet" href="~/Content/_MaintainStyles.css" />
-</head>
+<link href="~/Content/_SharedTheme.css" rel="stylesheet" type="text/css" />
 
 <div class="body">
 
     <header>
-        <h1><i class="glyphicon glyphicon-wrench"></i> Record Maintenance Dashboard</h1>
+        <h1><i class="glyphicon glyphicon-wrench"></i>Maintain Dashboard</h1>
     </header>
 
     @* Success/Error Message Display (Crucial for showing results after modal submission) *@
@@ -39,11 +36,11 @@
         <div class="col-md-4">
             <div class="panel panel-success dashboard-panel">
                 <div class="panel-heading maintain-heading">
-                    <h3 class="panel-title"><i class="glyphicon glyphicon-user"></i> Staff Maintenance</h3>
+                    <h3 class="panel-title"><i class="glyphicon glyphicon-user"></i> Staff</h3>
 
                     @* Dropdown Selector *@
-                    <select id="staff-name-selector" class="form-control select-name" onchange="selectEntityByName(this, 'staff')">
-                        <option value="0">--- Select Staff Member ---</option>
+                    <select id="staff-name-selector" class="form-control-select select-name" onchange="selectEntityByName(this, 'staff')">
+                        <option value="0">--- Select ---</option>
                         @if (Model.StaffsList != null)
                         {
                             foreach (var staff in Model.StaffsList.OrderBy(s => s.last_name))
@@ -83,9 +80,7 @@
                                 <p>Phone: <strong id="staff-phone">@staff.phone</strong></p>
                                 <p>Store: <strong id="staff-store">@staff.store_name</strong></p>
                                 <p>Manager: <strong id="staff-manager">@staff.manager_name</strong></p>
-                                <hr />
-                                <h5 class="text-info">Search by Name or ID below.</h5>
-                                <input type="hidden" id="staff-current-id" value="@staff.staff_id" />
+
                             </div>
                         }
                     }
@@ -99,10 +94,10 @@
                 @* Panel Footer: Search and Action Buttons *@
                 <div class="panel-footer staff-navigator panel-navigator text-center">
                     <div class="input-group input-group-sm search-group">
-                        <input id="staff-search-input" type="text" class="form-control text-center" placeholder="Search Staff Name or ID" />
+                        <input id="staff-search-input" type="text" class="form-control text-center rounded"  placeholder="--- Search Name/ID ---" />
                         <span class="input-group-btn">
                             <button class="btn btn-default" type="button" onclick="filterAndDisplay('staff')">
-                                <i class="glyphicon glyphicon-search"></i>
+                                <i class="glyphicon glyphicon-search">>>></i>
                             </button>
                         </span>
                     </div>
@@ -125,11 +120,10 @@
         <div class="col-md-4">
             <div class="panel panel-info dashboard-panel">
                 <div class="panel-heading maintain-heading">
-                    <h3 class="panel-title"><i class="glyphicon glyphicon-globe"></i> Customer Maintenance</h3>
-
+                    <h3 class="panel-title"><i class="glyphicon glyphicon-globe"></i> Customer</h3>
                     @* Dropdown Selector *@
-                    <select id="customer-name-selector" class="form-control select-name" onchange="selectEntityByName(this, 'customer')">
-                        <option value="0">--- Select Customer Name ---</option>
+                    <select id="customer-name-selector" class="form-control-select select-name" onchange="selectEntityByName(this, 'customer')">
+                        <option value="0">--- Select ---</option>
                         @if (Model.CustomersList != null)
                         {
                             foreach (var customer in Model.CustomersList.OrderBy(c => c.last_name))
@@ -167,9 +161,6 @@
                                 <p>Location: <strong id="customer-location">@customer.city, @customer.state</strong></p>
                                 <p>Street: <strong id="customer-street">@customer.street</strong></p>
                                 <p>Zip: <strong id="customer-zip">@customer.zip_code</strong></p>
-                                <hr />
-                                <h5 class="text-info">Search by Name or ID below.</h5>
-                                <input type="hidden" id="customer-current-id" value="@customer.customer_id" />
                             </div>
                         }
                     }
@@ -182,10 +173,10 @@
 
                 <div class="panel-footer customer-navigator panel-navigator text-center">
                     <div class="input-group input-group-sm search-group">
-                        <input id="customer-search-input" type="text" class="form-control text-center" placeholder="Search Customer Name or ID" />
+                        <input id="customer-search-input" type="text" class="form-control text-center rounded" placeholder="--- Search Name/ID ---" />
                         <span class="input-group-btn">
                             <button class="btn btn-default" type="button" onclick="filterAndDisplay('customer')">
-                                <i class="glyphicon glyphicon-search"></i>
+                                <i class="glyphicon glyphicon-search">>>></i>
                             </button>
                         </span>
                     </div>
@@ -208,11 +199,10 @@
         <div class="col-md-4">
             <div class="panel panel-warning dashboard-panel">
                 <div class="panel-heading maintain-heading">
-                    <h3 class="panel-title"><i class="glyphicon glyphicon-tag"></i> Product Maintenance</h3>
-
+                    <h3 class="panel-title"><i class="glyphicon glyphicon-tag"></i> Product </h3>
                     @* Dropdown Selector *@
-                    <select id="product-name-selector" class="form-control select-name" onchange="selectEntityByName(this, 'product')">
-                        <option value="0">--- Select Product Name ---</option>
+                    <select id="product-name-selector" class="form-control-select select-name" onchange="selectEntityByName(this, 'product')">
+                        <option value="0">--- Select ---</option>
                         @if (Model.ProductsList != null)
                         {
                             foreach (var product in Model.ProductsList.OrderBy(p => p.product_name))
@@ -221,8 +211,11 @@
                             }
                         }
                     </select>
+
                 </div>
                 <div class="panel-body text-center" id="product-panel-body">
+
+              
                     @if (Model.ProductsList != null && Model.ProductsList.Any())
                     {
                         for (int i = 0; i < Model.ProductsList.Count(); i++)
@@ -249,7 +242,7 @@
                                 if (@i == 0) { currentDisplayId['product'] = @product.product_id; }
                             </script>
 
-                            <div class="detail-item product-item" id="product-detail-container" style="display: @(i == 0 ? "block" : "none");">
+                            <div class="detail-item product-item " id="product-detail-container" style="display: @(i == 0 ? "block" : "none");">
                                 <h4 class="text-center">@product.product_name</h4>
 
                                 @* IMAGE CONTAINER *@
@@ -262,9 +255,6 @@
                                 <p>Model Year: <strong id="product-year">@product.model_year</strong></p>
                                 <p>Price: <strong id="product-price">@product.list_price.ToString("C")</strong></p>
                                 <p>Total Stock: <strong id="product-stock">@product.TotalStock</strong></p>
-                                <hr />
-                                <h5 class="text-info">Search by Name or ID below.</h5>
-                                <input type="hidden" id="product-current-id" value="@product.product_id" />
                             </div>
                         }
                     }
@@ -277,15 +267,15 @@
 
                 <div class="panel-footer product-navigator panel-navigator text-center">
                     <div class="input-group input-group-sm search-group">
-                        <input id="product-search-input" type="text" class="form-control text-center" placeholder="Search Product Name or ID" />
+                        <input id="product-search-input" type="text" class="form-control text-center rounded" placeholder="--- Search Name/ID ---" />
                         <span class="input-group-btn">
                             <button class="btn btn-default" type="button" onclick="filterAndDisplay('product')">
-                                <i class="glyphicon glyphicon-search"></i>
+                                <i class="glyphicon glyphicon-search">>>></i>
                             </button>
                         </span>
                     </div>
 
-                    <div class="btn-group btn-group-sm maintenance-actions" role="group">
+                    <div class="btn-group btn-group-sm maintenance-actions" role="group" style="justify-content: space-between">
                         <button type="button" class="btn btn-warning" onclick="loadMaintenanceModal('product', 'Edit')">
                             Edit
                         </button>

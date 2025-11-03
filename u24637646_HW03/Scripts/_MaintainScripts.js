@@ -1,31 +1,24 @@
-﻿// ==================================================================================
-// _MaintainPanelScripts.js - Search, Display, Edit/Delete Logic for Panels
-// ==================================================================================
+﻿// Maintenance Panel Scripts - handles search, display, edit, and delete operations for entities
+// Global variables declared in Maintain.cshtml: entityDataMap and currentDisplayId
 
-// Global map declared in Maintain.cshtml: entityDataMap and currentDisplayId
-
-// ------------------------------------------------------------------
-// NEW: Function to handle selection from the dropdown
-// ------------------------------------------------------------------
+// Handle dropdown selection to display entity details
 function selectEntityByName(selectElement, entity) {
     var id = selectElement.value;
 
-    // Clear search input if dropdown is used
+    // Clear the search input when using dropdown
     $('#' + entity + '-search-input').val('');
 
     if (parseInt(id) > 0) {
         var data = entityDataMap[entity][id];
         updatePanelDisplay(entity, data);
     } else {
-        // Option "--- Select Entity ---" selected: show no data or placeholder
+        // Show placeholder when "Select Entity" option is chosen
         $('#' + entity + '-detail-container').html('<p class="text-info">Select a record from the dropdown or use the search box.</p>');
         $('#' + entity + '-current-id').val(0);
     }
 }
 
-// ------------------------------------------------------------------
-// 1. Function to Dynamically Update Panel Display (Includes Product Image)
-// ------------------------------------------------------------------
+// Update the panel display with entity data
 function updatePanelDisplay(entity, data) {
     var panelBodyContainer = $('#' + entity + '-detail-container');
 
@@ -35,10 +28,10 @@ function updatePanelDisplay(entity, data) {
         return;
     }
 
-    // Update the currently displayed ID tracker
+    // Update the tracker for currently displayed ID
     $('#' + entity + '-current-id').val(data.id);
 
-    // Build the new HTML content
+    // Build HTML content based on entity type
     var htmlContent = '<h4 class="text-center">' + data.name + '</h4>';
 
     if (entity === 'staff') {
@@ -55,9 +48,11 @@ function updatePanelDisplay(entity, data) {
             '<p>Zip: <strong>' + data.zip + '</strong></p>';
 
     } else if (entity === 'product') {
-        // Include Image Container
+        // Include product image in the display
         htmlContent += '<div class="image-container">' +
-            '<img id="product-image" src="' + data.imageUrl + '" alt="' + data.name + '" style="max-width: 100%; height: auto; margin-bottom: 10px;" onerror="this.onerror=null;this.src=\'/Images/placeholder.jpeg\';" />' + // Added error fallback
+            '<img id="product-image" src="' + data.imageUrl + '" alt="' + data.name + '" ' +
+            'style="max-width: 100%; height: auto; margin-bottom: 10px;" ' +
+            'onerror="this.onerror=null;this.src=\'/Images/placeholder.jpeg\';" />' +
             '</div>';
 
         htmlContent += '<p>Brand: <strong>' + data.brand + '</strong></p>' +
@@ -67,21 +62,15 @@ function updatePanelDisplay(entity, data) {
             '<p>Total Stock: <strong>' + data.stock + '</strong></p>';
     }
 
-    htmlContent += '<hr /><h5 class="text-info">Use the search box below or the selector above.</h5>';
-    htmlContent += '<input type="hidden" id="' + entity + '-current-id" value="' + data.id + '" />';
-
-    // Replace the content
+    // Update the panel content
     panelBodyContainer.html(htmlContent).show();
 }
 
-
-// ------------------------------------------------------------------
-// 2. Function to Filter/Search and Display (Clears dropdown upon search)
-// ------------------------------------------------------------------
+// Search and display entity by name or ID
 function filterAndDisplay(entity) {
     var searchTerm = $('#' + entity + '-search-input').val().trim().toLowerCase();
 
-    // Clear the dropdown when search is performed
+    // Clear dropdown selection when using search
     $('#' + entity + '-name-selector').val('0');
 
     var foundData = null;
@@ -91,18 +80,18 @@ function filterAndDisplay(entity) {
         return;
     }
 
-    // Check if search term is a number (ID lookup)
+    // Check if search term is numeric (ID lookup)
     var searchId = parseInt(searchTerm);
     if (!isNaN(searchId) && searchId > 0) {
         foundData = entityDataMap[entity][searchId];
     } else {
-        // Search by name (simple substring match)
+        // Search by name (substring match)
         for (var id in entityDataMap[entity]) {
             if (entityDataMap[entity].hasOwnProperty(id)) {
                 var item = entityDataMap[entity][id];
                 if (item.name && item.name.toLowerCase().includes(searchTerm)) {
                     foundData = item;
-                    break;
+                    break; // Use first match
                 }
             }
         }
@@ -111,14 +100,12 @@ function filterAndDisplay(entity) {
     if (foundData) {
         updatePanelDisplay(entity, foundData);
     } else {
-        updatePanelDisplay(entity, { id: 0 }); // Call display function with null data
+        // Display no results message
+        updatePanelDisplay(entity, { id: 0 });
     }
 }
 
-
-// ------------------------------------------------------------------
-// 3. Function to Load Maintenance Modal (Edit/Details)
-// ------------------------------------------------------------------
+// Load edit or details modal for maintenance
 function loadMaintenanceModal(entity, action) {
     var dbId = $('#' + entity + '-current-id').val();
 
@@ -129,11 +116,14 @@ function loadMaintenanceModal(entity, action) {
 
     var entityTitle = entity.charAt(0).toUpperCase() + entity.slice(1);
     var modalId = '#maintain' + entityTitle + 'Modal';
-    var url = '/' + entityTitle + 's/' + action + '/' + dbId; // e.g., /Staffs/Edit/5
 
-    // Update Modal Title
+    // 🚨 FIX: Correct URL to target the HomeController actions (e.g., /Home/EditStaff/1)
+    var url = '/Home/' + action + entityTitle + '/' + dbId;
+
+    // Update modal title
     $('#maintain' + entityTitle + 'ModalTitle').text(entityTitle + ' ' + action);
 
+    // Load form content via AJAX
     $.ajax({
         url: url,
         type: 'GET',
@@ -142,7 +132,7 @@ function loadMaintenanceModal(entity, action) {
             $(modalId + 'Body').html(data);
             $(modalId).modal('show');
 
-            // Re-parse validation for forms loaded via AJAX
+            // Re-parse validation for dynamically loaded forms
             $.validator.unobtrusive.parse(modalId + 'Body');
         },
         error: function () {
@@ -151,10 +141,7 @@ function loadMaintenanceModal(entity, action) {
     });
 }
 
-
-// ------------------------------------------------------------------
-// 4. Function to Confirm and Delete
-// ------------------------------------------------------------------
+// Confirm and delete an entity record
 function confirmAndDelete(entity) {
     var id = $('#' + entity + '-current-id').val();
     var name = $('#' + entity + '-detail-container h4').text();
@@ -168,49 +155,54 @@ function confirmAndDelete(entity) {
 
     if (confirm("Are you sure you want to permanently delete " + entityTitle + ": " + name + " (ID: " + id + ")? This action cannot be undone.")) {
 
-        var url = '/' + entityTitle + 's/DeleteConfirmed/' + id;
+        // 🚨 FIX: Correct URL to target the HomeController actions (e.g., /Home/DeleteStaff)
+        var url = '/Home/Delete' + entityTitle;
+
+        // 🚨 FIX: Include Anti-Forgery Token for [ValidateAntiForgeryToken]
+        var token = $('input[name="__RequestVerificationToken"]').val();
 
         $.ajax({
             url: url,
             type: 'POST',
-            data: { id: id },
+            data: {
+                id: id,
+                '__RequestVerificationToken': token // Pass the token with the ID
+            },
             dataType: 'json',
             success: function (result) {
                 if (result.success) {
                     alert(entityTitle + " deleted successfully. Refreshing the dashboard.");
-                    // Remove item from client-side map
+
+                    // Remove from client-side data map
                     delete entityDataMap[entity][id];
-                    // Redirect or reload the page to update the panel content
+
+                    // Redirect to refresh the page (now using the redirectUrl returned from C#)
                     window.location.href = result.redirectUrl || '/Home/Maintain';
                 } else {
                     alert("Error deleting " + entityTitle + ": " + (result.message || "An unknown error occurred."));
                 }
             },
             error: function (xhr) {
-                alert("An unexpected server error occurred during deletion.");
+                alert("An unexpected server error occurred during deletion or validation.");
             }
         });
     }
 }
 
-
-// ------------------------------------------------------------------
-// 5. General Document Ready Setup
-// ------------------------------------------------------------------
+// Document ready setup
 $(document).ready(function () {
 
-    // Bind Enter keypress to the search function
+    // Bind Enter key to search function
     $('.search-group input[type="text"]').keypress(function (e) {
-        if (e.which === 13) {
+        if (e.which === 13) { // Enter key
             e.preventDefault();
             var entity = $(this).attr('id').split('-')[0];
             filterAndDisplay(entity);
         }
     });
 
-    // Handle AJAX Form Submissions from Edit Modals
-    // IMPORTANT: Your modal partial forms must have the class 'ajax-maintain-form' 
-    // and the data-entity-type attribute (e.g., data-entity-type="staff")
+    // Handle AJAX form submissions from edit modals
+    // Forms must have class 'ajax-maintain-form' and data-entity-type attribute
     $(document).on('submit', 'form.ajax-maintain-form', function (e) {
         e.preventDefault();
         var form = $(this);
@@ -225,20 +217,21 @@ $(document).ready(function () {
             dataType: 'json',
             success: function (result) {
                 if (result.success) {
-                    // Hide the modal
+                    // Hide modal
                     $('#maintain' + type.charAt(0).toUpperCase() + type.slice(1) + 'Modal').modal('hide');
 
-                    // Reload the maintain page to update all panels and map
-                    window.location.href = result.redirectUrl || '/Maintain/Index';
+                    // Reload maintain page to update all panels
+                    // This now uses the result.redirectUrl which is set in the updated C# controller
+                    window.location.href = result.redirectUrl || '/Home/Maintain';
 
                 } else {
                     alert('Action failed: ' + (result.message || 'Please check the input.'));
                 }
             },
             error: function (xhr) {
-                // If the controller returns the partial view with validation errors
+                // If controller returns partial view with validation errors
                 if (xhr.status === 200 && xhr.responseText.indexOf('form-group') > -1) {
-                    // Reload the form content with validation messages
+                    // Reload form content with validation messages
                     $('#maintain' + type.charAt(0).toUpperCase() + type.slice(1) + 'ModalBody').html(xhr.responseText);
                     $.validator.unobtrusive.parse('#maintain' + type.charAt(0).toUpperCase() + type.slice(1) + 'ModalBody');
                 } else {

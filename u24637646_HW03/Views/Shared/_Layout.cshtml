@@ -7,8 +7,16 @@
 
 
     <link rel="stylesheet" href="~/Content/bootstrap-grid.css" />
+    <link href="~/Content/bootstrap.css" rel="stylesheet" type="text/css" />
+
+
     <link rel="icon" type="image/png" href="@Url.Content("~/Images/BikeStore-Logo.png")">
-    <link rel="stylesheet" href="~/Content/SharedStyles.css" />
+
+    <link href="~/Content/_SharedTheme.css" rel="stylesheet" />
+    <link href="~/Content/Site.css" rel="stylesheet" type="text/css" />
+    <link href="~/Content/_HomeStyles.css" rel="stylesheet" type="text/css" />
+    <link href="~/Content/_ReportingStyles.css" rel="stylesheet" type="text/css" />
+
 
     @Styles.Render("~/Content/css")
     @Scripts.Render("~/bundles/modernizr")
@@ -94,8 +102,7 @@
 
     @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/bootstrap")
-    @Scripts.Render("~/bundles/jqueryval") @* IMPORTANT: Needed for validation *@
-
+    @Scripts.Render("~/bundles/jqueryval")
     <script src="@Url.Content("~/Scripts/_LayoutScripts.js")"></script>
     @RenderSection("scripts", required: false)
 </body>

@@ -1,89 +1,52 @@
 ﻿/*
- * Styles moved from the Home/Index.cshtml Razor view.
- * This includes the original <style> block and extracted inline styles.
- */
+    HOME / DASHBOARD PAGE STYLE
+    Theme: Soft Light with Teal Accents
+*/
 
-/* --- Styles originally in <style> block --- */
-
-.id-jump-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 10px;
+:root {
+    --color-primary-accent: #009688;
+    --color-primary-hover: #26a69a;
+    --color-text-dark: #222;
+    --color-card-bg: #ffffff;
+    --color-shadow: rgba(0, 0, 0, 0.05);
+    --color-border: #e5e7eb;
 }
 
-    .id-jump-container .id-input-group {
-        width: 80px;
-        margin-right: 5px;
+/* DASHBOARD CONTAINER */
+.dashboard-container {
+    padding: 20px;
+}
+
+/* HOME CARDS */
+.info-card {
+    background-color: var(--color-card-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px var(--color-shadow);
+    padding: 25px;
+    margin-bottom: 20px;
+    border: 1px solid var(--color-border);
+}
+
+    .info-card h3 {
+        color: var(--color-primary-accent);
+        font-weight: 600;
+        border-bottom: 1px solid var(--color-border);
+        padding-bottom: 10px;
+        margin-bottom: 15px;
     }
 
-    .id-jump-container p {
-        margin: 0;
-        font-weight: bold;
+/* HOME BUTTONS */
+.btn-home {
+    background-color: var(--color-primary-accent);
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+    .btn-home:hover {
+        background-color: var(--color-primary-hover);
     }
-
-/* --- Extracted Inline Styles --- */
-
-/* For the body/main content container (if needed, extracted from the main .row div) */
-/* .body {
-    
-} */
-
-/* For the main .row div container (originally margin-top: 20px) */
-.dashboard-row {
-    margin-top: 20px;
-}
-
-/* For the product filter form container (originally margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;) */
-.product-filters {
-    margin-top: 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    align-items: center;
-}
-
-/* For Brand Dropdown and Category Dropdown (originally flex: 1 1 30%; min-width: 100px;) */
-#brand-filter,
-#category-filter {
-    flex: 1 1 30%;
-    min-width: 100px;
-}
-
-/* For Reset Filter button container (originally flex: 1 1 10%; min-width: 80px; text-align: center;) */
-.product-filters > div:nth-child(3) {
-    flex: 1 1 10%;
-    min-width: 80px;
-    text-align: center;
-}
-
-/* For the detail items (staff, customer, product) visibility
- * Original inline logic was: style="display: @(i == 0 ? "block" : "none");"
- * The default for the first item is 'block', others are 'none'. 
- * The Razor logic handles this initial state, this CSS is mainly for the image/nav groups.
- */
-.detail-item:not([style*="display: block"]) {
-    display: none;
-}
-
-
-/* For the Staff/Customer/Product item counts (originally style="display:none;") */
-.entity-count {
-    display: none;
-}
-
-/* For the product image (originally align-content:center; max-height: 150px; width: auto; margin: 10px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);) */
-.product-item img {
-    /* align-content is invalid CSS, using margin auto for center alignment with 'display: block' */
-    display: block;
-    max-height: 150px;
-    width: auto;
-    margin: 10px auto; /* Centered with margin auto */
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* For the panel footer button groups (originally style="margin-top: 5px;") */
-.panel-navigator .btn-group {
-    margin-top: 5px;
-}

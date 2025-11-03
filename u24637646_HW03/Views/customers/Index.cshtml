@@ -1,75 +1,50 @@
 ﻿@model IEnumerable<u24637646_HW03.ViewModels.CustomerViewModel>
 
 @{
-    ViewBag.Title = "Index";
+    ViewBag.Title = "Customer Index";
 }
 
-<h2>Index</h2>
+<link href="~/Content/_SharedTheme.css" rel="stylesheet" type="text/css" />
+
+<h2>Customer Index</h2>
 
 <p>
-    @Html.ActionLink("Create New", "Create")
+    @* Applied: btn-primary for the Create button *@
+    @Html.ActionLink("Create New", "Create", null, new { @class = "btn btn-primary" })
 </p>
-<table class="table">
+
+@* Applied: table-striped and table-hover classes for modern look *@
+<table class="table table-striped table-hover">
     <tr>
-        <th>
-            @Html.DisplayNameFor(model => model.first_name)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.last_name)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.phone)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.email)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.street)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.city)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.state)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.zip_code)
-        </th>
-        <th></th>
+        <th>@Html.DisplayNameFor(model => model.first_name)</th>
+        <th>@Html.DisplayNameFor(model => model.last_name)</th>
+        <th>@Html.DisplayNameFor(model => model.phone)</th>
+        <th>@Html.DisplayNameFor(model => model.email)</th>
+        <th>@Html.DisplayNameFor(model => model.street)</th>
+        <th>@Html.DisplayNameFor(model => model.city)</th>
+        <th>@Html.DisplayNameFor(model => model.state)</th>
+        <th>@Html.DisplayNameFor(model => model.zip_code)</th>
+        <th>Actions</th>
     </tr>
 
-@foreach (var item in Model) {
-    <tr>
-        <td>
-            @Html.DisplayFor(modelItem => item.first_name)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.last_name)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.phone)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.email)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.street)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.city)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.state)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.zip_code)
-        </td>
-        <td>
-            @Html.ActionLink("Edit", "Edit", new { id=item.customer_id }) |
-            @Html.ActionLink("Details", "Details", new { id=item.customer_id }) |
-            @Html.ActionLink("Delete", "Delete", new { id=item.customer_id })
-        </td>
-    </tr>
-}
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@Html.DisplayFor(modelItem => item.first_name)</td>
+            <td>@Html.DisplayFor(modelItem => item.last_name)</td>
+            <td>@Html.DisplayFor(modelItem => item.phone)</td>
+            <td>@Html.DisplayFor(modelItem => item.email)</td>
+            <td>@Html.DisplayFor(modelItem => item.street)</td>
+            <td>@Html.DisplayFor(modelItem => item.city)</td>
+            <td>@Html.DisplayFor(modelItem => item.state)</td>
+            <td>@Html.DisplayFor(modelItem => item.zip_code)</td>
+            <td>
+                @* Links will inherit the subtle styling from _DataStyleSheet.css *@
+                @Html.ActionLink("Edit", "Edit", new { id = item.customer_id }) |
+                @Html.ActionLink("Details", "Details", new { id = item.customer_id }) |
+                @Html.ActionLink("Delete", "Delete", new { id = item.customer_id })
+            </td>
+        </tr>
+    }
 
 </table>

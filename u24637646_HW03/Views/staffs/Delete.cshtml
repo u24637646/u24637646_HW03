@@ -3,9 +3,19 @@
     ViewBag.Title = "Delete";
 }
 
+<link href="~/Content/_SharedTheme.css" rel="stylesheet" type="text/css" />
+
 <h2>Delete Staff Member</h2>
 
 <h3>Are you absolutely sure you want to delete this staff member?</h3>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger" role="alert">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
 <div>
     <h4>Staff Details to be Deleted</h4>
     <hr />
@@ -68,13 +78,13 @@
     @using (Html.BeginForm())
     {
         @Html.AntiForgeryToken()
-
-        @* We use the staff_id from the ViewModel for the POST action *@
         @Html.HiddenFor(model => model.staff_id)
 
         <div class="form-actions no-color">
-            <input type="submit" value="Delete" class="btn btn-danger" /> |
-            @Html.ActionLink("Cancel and Back to List", "Index")
+
+            <input type="button" value="Back" class="btn btn-primary" onclick="history.back()" />
+            <input type="submit" value="Delete" class="btn btn-danger" />
         </div>
     }
+
 </div>

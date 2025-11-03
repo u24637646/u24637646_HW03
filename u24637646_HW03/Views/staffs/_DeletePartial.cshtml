@@ -1,14 +1,16 @@
 ﻿@model u24637646_HW03.Models.staffs
 
-<h3>Are you sure you want to delete this?</h3>
+<link href="~/Content/_DataStyleSheet.css" rel="stylesheet" type="text/css" />
+@* NOTE: This partial view assumes the model has related entities (stores, staffs2) loaded via Include() in the controller if you are displaying properties like store_name.
+    If not, you should use a ViewModel that includes the string properties, or ensure the loading action is robust.
+*@
 <div>
-    <h4>staffs</h4>
+    <h4>Are you sure you want to delete this staff member?</h4>
     <hr />
     <dl class="dl-horizontal">
         <dt>
             @Html.DisplayNameFor(model => model.first_name)
         </dt>
-
         <dd>
             @Html.DisplayFor(model => model.first_name)
         </dd>
@@ -16,7 +18,6 @@
         <dt>
             @Html.DisplayNameFor(model => model.last_name)
         </dt>
-
         <dd>
             @Html.DisplayFor(model => model.last_name)
         </dd>
@@ -24,7 +25,6 @@
         <dt>
             @Html.DisplayNameFor(model => model.email)
         </dt>
-
         <dd>
             @Html.DisplayFor(model => model.email)
         </dd>
@@ -32,7 +32,6 @@
         <dt>
             @Html.DisplayNameFor(model => model.phone)
         </dt>
-
         <dd>
             @Html.DisplayFor(model => model.phone)
         </dd>
@@ -40,43 +39,42 @@
         <dt>
             @Html.DisplayNameFor(model => model.active)
         </dt>
-
         <dd>
-            @Html.DisplayFor(model => model.active)
+            @(Model.active == 1 ? "Yes" : "No")
         </dd>
 
-        <dt>
-            @Html.DisplayNameFor(model => model.staffs2.first_name)
-        </dt>
-
-        <dd>
-            @Html.DisplayFor(model => model.staffs2.first_name)
-        </dd>
-
-        <dt>
-            @Html.DisplayNameFor(model => model.staffs3.first_name)
-        </dt>
-
-        <dd>
-            @Html.DisplayFor(model => model.staffs3.first_name)
-        </dd>
-
+        @* Displaying related data (Manager Name, Store Name) - requires eager loading in the controller *@
         <dt>
             @Html.DisplayNameFor(model => model.stores.store_name)
         </dt>
-
         <dd>
             @Html.DisplayFor(model => model.stores.store_name)
         </dd>
 
+        <dt>
+            @Html.DisplayNameFor(model => model.staffs2.first_name) Manager
+        </dt>
+        <dd>
+            @if (Model.manager_id.HasValue)
+            {
+                @Html.DisplayFor(model => model.staffs2.first_name) @Html.DisplayFor(model => model.staffs2.last_name)
+            }
+            else
+            {
+                <span>No Manager</span>
+            }
+        </dd>
     </dl>
 
-    @using (Html.BeginForm()) {
+    @using (Html.BeginForm("DeleteConfirmed", "customers", FormMethod.Post, new { id = "deleteCustomerForm" }))
+    {
         @Html.AntiForgeryToken()
-
-        <div class="form-actions no-color">
-            <input type="submit" value="Delete" class="btn btn-default" /> |
-            @Html.ActionLink("Back to List", "Index")
-        </div>
-    }
+        @Html.HiddenFor(model => model.staff_id)
+<div class="form-actions no-color">
+    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+    <input type="submit" value="Delete" class="btn btn-default" />
 </div>
+    }
+
+</div>
+

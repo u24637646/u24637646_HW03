@@ -1,0 +1,177 @@
+﻿/*
+    DATA TABLES & FORMS STYLE
+    Theme: Soft Light with Teal Accent
+*/
+
+:root {
+    --color-primary-accent: #009688;
+    --color-primary-hover: #26a69a;
+    --color-background-light: #f9fafb;
+    --color-card-bg: #ffffff;
+    --color-text-dark: #222;
+    --color-text-muted: #666;
+    --color-border: #e5e7eb;
+    --color-shadow: rgba(0, 0, 0, 0.05);
+}
+
+/* BASE STYLES */
+body {
+    background-color: var(--color-background-light);
+    font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+    color: var(--color-text-dark);
+}
+
+/* HEADINGS */
+h2, h3, h4 {
+    color: var(--color-text-dark);
+    font-weight: 600;
+    margin-bottom: 25px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* DATA TABLES */
+.table {
+    background-color: var(--color-card-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px var(--color-shadow);
+    margin-bottom: 30px;
+}
+
+    .table th {
+        background-color: var(--color-primary-accent);
+        color: #fff;
+        border: none;
+        padding: 12px 15px;
+        font-weight: 500;
+        text-transform: uppercase;
+        font-size: 0.85em;
+        letter-spacing: 0.5px;
+    }
+
+    .table td {
+        border-top: 1px solid var(--color-border);
+        padding: 12px 15px;
+        vertical-align: middle;
+        font-size: 0.95em;
+    }
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: var(--color-background-light);
+}
+
+.table-hover tbody tr:hover {
+    background-color: #eef3f2;
+}
+
+.table td a {
+    margin-right: 10px;
+    font-weight: 500;
+    color: var(--color-text-dark);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+    .table td a:hover {
+        color: var(--color-primary-accent);
+        text-decoration: underline;
+    }
+
+/* FORMS & DETAILS */
+.form-horizontal, .dl-horizontal {
+    background-color: var(--color-card-bg);
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px var(--color-shadow);
+    margin-bottom: 30px;
+}
+
+.form-control {
+    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    padding: 10px 12px;
+    transition: border-color 0.2s ease;
+}
+
+    .form-control:focus {
+        border-color: var(--color-primary-accent);
+        box-shadow: 0 0 0 0.2rem rgba(0, 150, 136, 0.25);
+        outline: none;
+    }
+
+.control-label {
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: 5px;
+}
+
+/* BUTTONS */
+.btn {
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+/* Primary Button */
+.btn-primary {
+    background-color: var(--color-primary-accent);
+    border-color: var(--color-primary-accent);
+    color: #fff;
+}
+
+    .btn-primary:hover {
+        background-color: var(--color-primary-hover);
+        box-shadow: 0 2px 8px rgba(0, 150, 136, 0.3);
+    }
+
+/* Secondary Button */
+.btn-default, .btn-secondary {
+    background-color: #e9ecef;
+    color: var(--color-text-dark);
+    border-color: #ced4da;
+}
+
+    .btn-default:hover, .btn-secondary:hover {
+        background-color: #ced4da;
+    }
+
+/* Danger Button */
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+}
+
+    .btn-danger:hover {
+        background-color: #c82333;
+    }
+
+/* MODALS */
+.modal-content {
+    border-radius: 6px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    border: none;
+}
+
+.modal-header {
+    background-color: var(--color-background-light);
+    color: var(--color-text-dark);
+    border-bottom: 1px solid var(--color-border);
+    padding: 15px 20px;
+}
+
+    .modal-header h4 {
+        font-weight: 600;
+        margin: 0;
+    }
+
+.modal-footer {
+    padding: 15px 20px;
+    background-color: #f0f2f5;
+    border-top: 1px solid var(--color-border);
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}

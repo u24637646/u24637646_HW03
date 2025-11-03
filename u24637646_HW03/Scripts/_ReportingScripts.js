@@ -46,7 +46,7 @@
                 }
             },
             plugins: {
-                legend: { display: false },
+                legend: { display: false }
             }
         }
     };

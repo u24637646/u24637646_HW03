@@ -4,12 +4,19 @@
     ViewBag.Title = "Delete";
 }
 
-<h2>Delete Product</h2>
+<link href="~/Content/_SharedTheme.css" rel="stylesheet" type="text/css" />
 
+<h2>Delete Product</h2>
 <h3>Are you sure you want to delete this product?</h3>
-<div>
-    <h4>Product Information</h4>
-    <hr />
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger" role="alert">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<div class="form-horizontal">
     <dl class="dl-horizontal">
         <dt>
             @Html.DisplayNameFor(model => model.product_name)
@@ -43,25 +50,18 @@
             @Html.DisplayNameFor(model => model.list_price)
         </dt>
         <dd>
-            @Model.list_price.ToString("C")
-        </dd>
-
-        <dt>
-            @Html.DisplayNameFor(model => model.TotalStock)
-        </dt>
-        <dd>
-            @Html.DisplayFor(model => model.TotalStock)
+            @Html.DisplayFor(model => model.list_price)
         </dd>
     </dl>
 
     @using (Html.BeginForm())
     {
         @Html.AntiForgeryToken()
-        @Html.HiddenFor(model => model.product_id) 
+        @Html.HiddenFor(model => model.product_id)
 
         <div class="form-actions no-color">
-            <input type="submit" value="Delete" class="btn btn-danger" /> |
-            @Html.ActionLink("Back to List", "Index")
+            <input type="button" value="Back" class="btn btn-primary" onclick="history.back()" />
+            <input type="submit" value="Delete" class="btn btn-danger" />
         </div>
     }
 </div>

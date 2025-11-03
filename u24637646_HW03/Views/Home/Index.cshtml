@@ -3,21 +3,15 @@
 @{
     ViewBag.Title = "Home";
 }
-
-<head>
-    <link rel="stylesheet" href="~/Content/_HomeStyles.css" />
-
-</head>
+<link href="~/Content/_SharedTheme.css" rel="stylesheet" type="text/css" />
 
 <div class="body">
 
     <header>
         <h1>Bike Stores Dashboard</h1>
-    </header>
+    </header> 
 
-    @* === MESSAGE DISPLAY AREA === *@
-
-    @* 1. Success Message Display (From Create POST: alert-success) *@
+    @* Success Message Display (using TempData set in the controller) *@
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible" role="alert">
@@ -26,23 +20,11 @@
         </div>
     }
 
-    @* 2. General Message Display (From Edit/Delete POST via Home Controller's ViewBag) *@
-    @if (ViewBag.Message != null)
-    {
-        <div class="alert @ViewBag.MessageClass alert-dismissible" role="alert">
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            @Html.Raw(ViewBag.Message)
-        </div>
-    }
-
-    @* === END MESSAGE DISPLAY AREA === *@
-
-
     @* === START PRODUCT FILTER FORM === *@
     @using (Html.BeginForm("Index", "Home", FormMethod.Get, new { @class = "product-filter-form" }))
     {
-        @* INLINE STYLE MOVED TO CSS CLASS .product-filters *@
-        <div class="product-filters">
+   
+        <div class="product-filter-container">
 
             @{
                 // Get the lists and selected values from ViewData (Set by the Controller)
@@ -83,8 +65,6 @@
     @* === END PRODUCT FILTER FORM === *@
 
     <script>
-        // entityIdMap initialization is now UNNECESSARY as jumpToId uses index directly
-        // However, keeping this line here for structural safety if other scripts rely on it.
         var entityIdMap = entityIdMap || {};
     </script>
 
@@ -103,13 +83,16 @@
                     @if (Model.StaffsList != null && Model.StaffsList.Any())
                     {
                         <input type="hidden" id="staff-index" value="0" />
-                        @* INLINE STYLE MOVED TO CSS CLASS .entity-count *@
-                        <span id="staff-count" class="entity-count">@(Model.StaffsList.Count())</span>
 
                         for (int i = 0; i < Model.StaffsList.Count(); i++)
                         {
                             var staff = Model.StaffsList.ElementAt(i);
 
+                            @* CRITICAL: Entity ID Mapping for jumpToId function (Must remain) *@
+                            <script>
+                                entityIdMap['staff'] = entityIdMap['staff'] || {};
+                                entityIdMap['staff'][@staff.staff_id] = @i;
+                            </script>
 
                             @* DISPLAY LOGIC MUST REMAIN IN RAZOR *@
                             <div class="detail-item staff-item" id="staff-@i" data-staff-id="@staff.staff_id" style="display: @(i == 0 ? "block" : "none");">
@@ -124,7 +107,7 @@
                                 <ul class="list-unstyled sales-list">
                                     @{
                                         var staffSales = Model.StaffSalesList
-                            .Where(s => s.staff_id == staff.staff_id).Take(5);
+                                            .Where(s => s.staff_id == staff.staff_id).Take(5);
                                     }
                                     @if (staffSales.Any())
                                     {
@@ -155,8 +138,7 @@
                                        type="number"
                                        class="panel-nav form-control text-center"
                                        min="1"
-                                       @* UPDATED PLACEHOLDER to 1-based index *@
-                                       placeholder="1"
+                                       placeholder="@(Model.StaffsList.First().staff_id)"
                                        onchange="jumpToId('staff')"
                                        onkeypress="if(event.keyCode == 13) { jumpToId('staff'); return false; }" />
                             </div>
@@ -165,19 +147,19 @@
                         @* INLINE STYLE MOVED TO CSS SELECTOR .panel-navigator .btn-group *@
                         <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-info" onclick="navigate('staff', -1)">
-                                <i class="glyphicon glyphicon-chevron-left"></i>
+                                <i class="glyphicon glyphicon-chevron-left"><</i>
                             </button>
                             @Html.ActionLink("View Details", "Details", "Staffs",
                                 new { id = Model.StaffsList.First().staff_id },
                                 new { @class = "btn btn-info", @id = "staff-details-link" })
                             <button type="button" class="btn btn-info" onclick="navigate('staff', 1)">
-                                <i class="glyphicon glyphicon-chevron-right"></i>
+                                <i class="glyphicon glyphicon-chevron-right">></i>
                             </button>
                         </div>
                     }
                     else
                     {
-                        @Html.ActionLink("View All Staff", "Index", "Staffs", null, new { @class = "btn btn-info btn-block" })
+                        @Html.ActionLink("View All Staff", "Index", "Staffs", null, new { @class = "btn btn-success btn-info" })
                     }
                 </div>
             </div>
@@ -196,12 +178,16 @@
                     @if (Model.CustomersList != null && Model.CustomersList.Any())
                     {
                         <input type="hidden" id="customer-index" value="0" />
-                        @* INLINE STYLE MOVED TO CSS CLASS .entity-count *@
-                        <span id="customer-count" class="entity-count">@(Model.CustomersList.Count())</span>
 
                         for (int i = 0; i < Model.CustomersList.Count(); i++)
                         {
                             var customer = Model.CustomersList.ElementAt(i);
+
+                            @* CRITICAL: Entity ID Mapping for jumpToId function (Must remain) *@
+                            <script>
+                                entityIdMap['customer'] = entityIdMap['customer'] || {};
+                                entityIdMap['customer'][@customer.customer_id] = @i;
+                            </script>
 
                             @* DISPLAY LOGIC MUST REMAIN IN RAZOR *@
                             <div class="detail-item customer-item" id="customer-@i" data-customer-id="@customer.customer_id" style="display: @(i == 0 ? "block" : "none");">
@@ -216,13 +202,13 @@
                                 <ul class="list-unstyled sales-list">
                                     @{
                                         var customerPurchases = Model.CustomerPurchasesList
-.Where(p => p.customer_id == customer.customer_id).Take(5);
+                                        .Where(p => p.customer_id == customer.customer_id).Take(5);
                                     }
                                     @if (customerPurchases.Any())
                                     {
                                         foreach (var purchase in customerPurchases)
                                         {
-                                            <li>Purchased: @purchase.product_name <br /> (Qty: @purchase.quantity)</li>
+                                            <li>Purchased: @purchase.product_name</li>
                                         }
                                     }
                                     else
@@ -247,8 +233,7 @@
                                        type="number"
                                        class="panel-nav form-control text-center"
                                        min="1"
-                                       @* UPDATED PLACEHOLDER to 1-based index *@
-                                       placeholder="1"
+                                       placeholder="@(Model.CustomersList.First().customer_id)"
                                        onchange="jumpToId('customer')"
                                        onkeypress="if(event.keyCode == 13) { jumpToId('customer'); return false; }" />
                             </div>
@@ -257,13 +242,13 @@
                         @* INLINE STYLE MOVED TO CSS SELECTOR .panel-navigator .btn-group *@
                         <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-info" onclick="navigate('customer', -1)">
-                                <i class="glyphicon glyphicon-chevron-left"></i>
+                                <i class="glyphicon glyphicon-chevron-left"><</i>
                             </button>
                             @Html.ActionLink("View Details", "Details", "Customers",
                                 new { id = Model.CustomersList.First().customer_id },
                                 new { @class = "btn btn-info", @id = "customer-details-link" })
                             <button type="button" class="btn btn-info" onclick="navigate('customer', 1)">
-                                <i class="glyphicon glyphicon-chevron-right"></i>
+                                <i class="glyphicon glyphicon-chevron-right">></i>
                             </button>
                         </div>
                     }
@@ -276,7 +261,7 @@
         </div>
 
 
-        @*--- Products Panel (FIXED - Index Jump) ---*@
+        @*--- Products Panel (FIXED - Mapped) ---*@
         <div class="col-md-4">
             <div class="panel panel-warning dashboard-panel">
 
@@ -288,8 +273,6 @@
                     @if (Model.ProductsList != null && Model.ProductsList.Any())
                     {
                         <input type="hidden" id="product-index" value="0" />
-                        @* INLINE STYLE MOVED TO CSS CLASS .entity-count *@
-                        <span id="product-count" class="entity-count">@(Model.ProductsList.Count())</span>
 
                         for (int i = 0; i < Model.ProductsList.Count(); i++)
                         {
@@ -297,6 +280,12 @@
                             var brandBaseName = product.brand_name.Split(' ')[0];
                             var randomImageSuffix = (i % 2) + 1;
                             var imageUrl = Url.Content("~/Images/" + brandBaseName + randomImageSuffix + ".jpeg");
+
+                            @* CRITICAL FIX: Entity ID Mapping for jumpToId function (Must remain) *@
+                            <script>
+                                entityIdMap['product'] = entityIdMap['product'] || {};
+                                entityIdMap['product'][@product.product_id] = @i;
+                            </script>
 
                             @* DISPLAY LOGIC MUST REMAIN IN RAZOR *@
                             <div class="detail-item product-item"
@@ -336,8 +325,7 @@
                                        type="number"
                                        class="panel-nav form-control text-center"
                                        min="1"
-                                       @* UPDATED PLACEHOLDER to 1-based index *@
-                                       placeholder="1"
+                                       placeholder="@(Model.ProductsList.First().product_id)"
                                        onchange="jumpToId('product')"
                                        onkeypress="if(event.keyCode == 13) { jumpToId('product'); return false; }" />
                             </div>
@@ -347,7 +335,7 @@
                         @* INLINE STYLE MOVED TO CSS SELECTOR .panel-navigator .btn-group *@
                         <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-info" onclick="navigate('product', -1)">
-                                <i class="glyphicon glyphicon-chevron-left"></i>
+                                <i class="glyphicon glyphicon-chevron-left"><</i>
                             </button>
 
                             @Html.ActionLink("View Details", "Details", "Products",
@@ -355,7 +343,7 @@
                                 new { @class = "btn btn-info", @id = "product-details-link" })
 
                             <button type="button" class="btn btn-info" onclick="navigate('product', 1)">
-                                <i class="glyphicon glyphicon-chevron-right"></i>
+                                <i class="glyphicon glyphicon-chevron-right">></i>
                             </button>
                         </div>
                     }
@@ -368,30 +356,23 @@
         </div>
     </div>
 
-    @* --- MODALS (UNTOUCHED) --- *@
-
+    @*--- Modal Staff Popups ---*@
     <div class="modal fade" id="createStaffModal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title">Create New Staff Member</h4>
-                </div>
                 <div class="modal-body" id="staffModalBody">
-
+                    @* Partial view content will load here via AJAX *@
                 </div>
             </div>
         </div>
     </div>
 
+    @*--- Modal Customers Popups ---*@
     <div class="modal fade" id="createCustomerModal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title">Create New Customer</h4>
-                </div>
                 <div class="modal-body" id="customerModalBody">
+                    @* Partial view content will load here via AJAX *@
                 </div>
             </div>
         </div>

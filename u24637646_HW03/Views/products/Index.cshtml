@@ -4,56 +4,36 @@
     ViewBag.Title = "Product Index";
 }
 
-<h2>Product List</h2>
+<link href="~/Content/_SharedTheme.css" rel="stylesheet" type="text/css" />
+
+<h2>Product Index</h2>
 
 <p>
+    @* Applied: btn-primary for the Create button *@
     @Html.ActionLink("Create New", "Create", null, new { @class = "btn btn-primary" })
 </p>
+
+@* Applied: table-striped and table-hover classes for modern look *@
 <table class="table table-striped table-hover">
     <tr>
-        <th>
-            @Html.DisplayNameFor(model => model.product_name)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.brand_name)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.category_name)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.model_year)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.list_price)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.TotalStock)
-        </th>
+        <th>@Html.DisplayNameFor(model => model.product_name)</th>
+        <th>@Html.DisplayNameFor(model => model.brand_name)</th>
+        <th>@Html.DisplayNameFor(model => model.category_name)</th>
+        <th>@Html.DisplayNameFor(model => model.model_year)</th>
+        <th>@Html.DisplayNameFor(model => model.list_price)</th>
         <th>Actions</th>
     </tr>
 
     @foreach (var item in Model)
     {
         <tr>
+            <td>@Html.DisplayFor(modelItem => item.product_name)</td>
+            <td>@Html.DisplayFor(modelItem => item.brand_name)</td>
+            <td>@Html.DisplayFor(modelItem => item.category_name)</td>
+            <td>@Html.DisplayFor(modelItem => item.model_year)</td>
+            <td>@Html.DisplayFor(modelItem => item.list_price)</td>
             <td>
-                @Html.DisplayFor(modelItem => item.product_name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.brand_name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.category_name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.model_year)
-            </td>
-            <td>
-                @item.list_price.ToString("C")
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.TotalStock)
-            </td>
-            <td>
+                @* Links will inherit the subtle styling from _DataStyleSheet.css *@
                 @Html.ActionLink("Edit", "Edit", new { id = item.product_id }) |
                 @Html.ActionLink("Details", "Details", new { id = item.product_id }) |
                 @Html.ActionLink("Delete", "Delete", new { id = item.product_id })

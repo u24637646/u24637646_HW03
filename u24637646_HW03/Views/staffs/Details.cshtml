@@ -4,6 +4,8 @@
     ViewBag.Title = "Staff Details";
 }
 
+<link href="~/Content/_SharedTheme.css" rel="stylesheet" type="text/css" />
+
 <h2>Staff Details</h2>
 
 <div>
@@ -43,6 +45,7 @@
             @Html.DisplayName("Active?")
         </dt>
         <dd>
+            @* Apply the Yes/No logic for the byte value *@
             @(Model.active == 1 ? "Yes" : "No")
         </dd>
 
@@ -61,8 +64,12 @@
         </dd>
 
     </dl>
+
+
 </div>
-<p>
-    @Html.ActionLink("Edit", "Edit", new { id = Model.staff_id }) |
-    @Html.ActionLink("Back", "Index", null, new { @class = "btn btn-default", @onclick = "history.back(); return false;" })
-</p>
+
+<div class="form-group">
+    <div class="col-md-offset-2 col-md-10">
+        <input type="button" value="Back" class="btn btn-primary" onclick="history.back()" />
+    </div>
+</div>

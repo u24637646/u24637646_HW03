@@ -1,8 +1,10 @@
-﻿@model u24637646_HW03.Models.products 
+﻿@model u24637646_HW03.Models.products
 
 @{
     ViewBag.Title = "Create";
 }
+
+<link href="~/Content/_SharedTheme.css" rel="stylesheet" type="text/css" />
 
 <h2>Create Product</h2>
 
@@ -12,9 +14,8 @@
     @Html.AntiForgeryToken()
 
     <div class="form-horizontal">
-        <h4>Product Information</h4>
-        <hr />
         @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
 
         <div class="form-group">
             @Html.LabelFor(model => model.product_name, htmlAttributes: new { @class = "control-label col-md-2" })
@@ -25,18 +26,18 @@
         </div>
 
         <div class="form-group">
-            @Html.LabelFor(model => model.brands, "Brand", htmlAttributes: new { @class = "control-label col-md-2" })
+            @Html.LabelFor(model => model.brand_id, "Brand", htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
-                @Html.DropDownList("brand_id", null, htmlAttributes: new { @class = "form-control" })
-                @Html.ValidationMessageFor(model => model.brands, "", new { @class = "text-danger" })
+                @Html.DropDownList("brand_id", null, "Select Brand", htmlAttributes: new { @class = "form-control" })
+                @Html.ValidationMessageFor(model => model.brand_id, "", new { @class = "text-danger" })
             </div>
         </div>
 
         <div class="form-group">
-            @Html.LabelFor(model => model.categories, "Category", htmlAttributes: new { @class = "control-label col-md-2" })
+            @Html.LabelFor(model => model.category_id, "Category", htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
-                @Html.DropDownList("category_id", null, htmlAttributes: new { @class = "form-control" })
-                @Html.ValidationMessageFor(model => model.categories, "", new { @class = "text-danger" })
+                @Html.DropDownList("category_id", null, "Select Category", htmlAttributes: new { @class = "form-control" })
+                @Html.ValidationMessageFor(model => model.category_id, "", new { @class = "text-danger" })
             </div>
         </div>
 
@@ -58,16 +59,9 @@
 
         <div class="form-group">
             <div class="col-md-offset-2 col-md-10">
+                <input type="button" value="Back" class="btn btn-primary" onclick="history.back()" />
                 <input type="submit" value="Create" class="btn btn-success" />
             </div>
         </div>
     </div>
-}
-
-<div>
-    @Html.ActionLink("Back to List", "Index")
-</div>
-
-@section Scripts {
-    @Scripts.Render("~/bundles/jqueryval")
 }

@@ -1,6 +1,7 @@
 ﻿@model u24637646_HW03.Models.staffs
 
-@* Start the form which will contain the modal body and footer. *@
+<link href="~/Content/_DataStyleSheet.css" rel="stylesheet" type="text/css" />
+
 @using (Html.BeginForm("CreatePartial", "staffs", FormMethod.Post, new { id = "createStaffForm" }))
 {
     @Html.AntiForgeryToken()
@@ -13,8 +14,7 @@
         @Html.ValidationSummary(true, "", new { @class = "text-danger" })
 
         <div class="form-horizontal">
-            @* Use col-md-3 and col-md-9 for better alignment in a modal's narrower context *@
-
+            @* First Name *@
             <div class="form-group">
                 @Html.LabelFor(model => model.first_name, htmlAttributes: new { @class = "control-label col-md-3" })
                 <div class="col-md-9">
@@ -23,6 +23,7 @@
                 </div>
             </div>
 
+            @* Last Name *@
             <div class="form-group">
                 @Html.LabelFor(model => model.last_name, htmlAttributes: new { @class = "control-label col-md-3" })
                 <div class="col-md-9">
@@ -31,6 +32,7 @@
                 </div>
             </div>
 
+            @* Email *@
             <div class="form-group">
                 @Html.LabelFor(model => model.email, htmlAttributes: new { @class = "control-label col-md-3" })
                 <div class="col-md-9">
@@ -39,6 +41,7 @@
                 </div>
             </div>
 
+            @* Phone *@
             <div class="form-group">
                 @Html.LabelFor(model => model.phone, htmlAttributes: new { @class = "control-label col-md-3" })
                 <div class="col-md-9">
@@ -47,15 +50,19 @@
                 </div>
             </div>
 
-            @* NOTE: Active is a byte and often defaults. You may want a checkbox or a hidden field instead of an EditorFor *@
+            @* Active Status *@
             <div class="form-group">
                 @Html.LabelFor(model => model.active, htmlAttributes: new { @class = "control-label col-md-3" })
                 <div class="col-md-9">
-                    @Html.EditorFor(model => model.active, new { htmlAttributes = new { @class = "form-control" } })
+                    @* Checkbox for active status (tinyint) *@
+                    <div class="checkbox">
+                        @Html.EditorFor(model => model.active)
+                    </div>
                     @Html.ValidationMessageFor(model => model.active, "", new { @class = "text-danger" })
                 </div>
             </div>
 
+            @* Store ID Dropdown *@
             <div class="form-group">
                 @Html.LabelFor(model => model.store_id, "Store", htmlAttributes: new { @class = "control-label col-md-3" })
                 <div class="col-md-9">
@@ -65,24 +72,22 @@
                 </div>
             </div>
 
+            @* Manager ID Dropdown *@
             <div class="form-group">
                 @Html.LabelFor(model => model.manager_id, "Manager", htmlAttributes: new { @class = "control-label col-md-3" })
                 <div class="col-md-9">
-                    @* Use "null" for optional fields, or specify a prompt *@
-                    @Html.DropDownList("manager_id", null, "--- No Manager ---", htmlAttributes: new { @class = "form-control" })
+
+                    @Html.DropDownList("manager_id", null, "--- No Manager ---", htmlAttributes: new { @class = "form - control" })
                     @Html.ValidationMessageFor(model => model.manager_id, "", new { @class = "text-danger" })
                 </div>
+
             </div>
+
 
         </div>
     </div>
-
-    @* The modal footer contains the action buttons *@
     <div class="modal-footer">
-        @* Close button must have data-dismiss="modal" *@
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-
-        @* Submit button is now placed here, inside the form, in the footer *@
-        <input type="submit" value="Create" class="btn btn-primary" />
+        <button type="submit" class="btn btn-primary">Create</button>
     </div>
 }

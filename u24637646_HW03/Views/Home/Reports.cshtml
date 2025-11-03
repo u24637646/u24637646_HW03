@@ -2,8 +2,7 @@
     ViewBag.Title = "Reports";
 }
 
-<link rel="stylesheet" href="~/Content/_ReportingStyles.css" />
-<!-- Updated TinyMCE CDN link - using a more reliable version -->
+<link href="~/Content/_SharedTheme.css" rel="stylesheet" type="text/css" />
 
 <!-- Place the first <script> tag in your HTML's <head> -->
 <script src="https://cdn.tiny.cloud/1/ong4t6vwwpwhnn99x0emgdt7be7w0gn7dek4dil4h7xrps0i/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
@@ -52,8 +51,9 @@
                     <label for="lineChartDescription" class="form-label">Description (Rich Text):</label>
                     <textarea id="lineChartDescription" name="Description" class="form-control mb-3"></textarea>
 
+                    <br />
                     <div class="text-center">
-                        <button type="submit" class="btn btn-secondary">Save Monthly Order Trend Chart</button>
+                        <button type="submit" class="btn btn-secondary">Save Chart</button>
                     </div>
                 }
             </div>
@@ -91,8 +91,9 @@
                     <label for="doughnutChartDescription" class="form-label">Description (Rich Text):</label>
                     <textarea id="doughnutChartDescription" name="Description" class="form-control mb-3"></textarea>
 
+                    <br />
                     <div class="text-center">
-                        <button type="submit" class="btn btn-secondary">Save Sales Revenue Distribution Chart</button>
+                        <button type="submit" class="btn btn-secondary">Save Chart</button>
                     </div>
                 }
             </div>
@@ -136,14 +137,6 @@
                                     <td>
                                         <a href="@Url.Action("DownloadReport", "Home", new { filename = report.Filename, filetype = report.Filetype })" class="btn btn-sm btn-info me-2">Download</a>
 
-                                        <button type="button" class="btn btn-sm btn-warning me-2 edit-description-btn"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#descriptionModal"
-                                                data-filename="@report.Filename"
-                                                data-description='@report.Description'>
-                                            Edit Description
-                                        </button>
-
                                         @using (Html.BeginForm("DeleteReport", "Home", FormMethod.Post, new { style = "display:inline;" }))
                                         {
                                             @Html.Hidden("filename", (string)report.Filename)
@@ -165,30 +158,6 @@
         </div>
     </div>
 </body>
-<div class="modal fade" id="descriptionModal" tabindex="-1" aria-labelledby="descriptionModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            @using (Html.BeginForm("UpdateReportDescription", "Home", FormMethod.Post))
-            {
-                <div class="modal-header">
-                    <h5 class="modal-title" id="descriptionModalLabel">Edit Description for: <span id="modal-filename"></span></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    @Html.Hidden("filename", "", new { id = "modal-hidden-filename" })
-
-                    <label for="reportDescriptionModal">Description:</label>
-                    <textarea id="reportDescriptionModal" name="Description" class="form-control"></textarea>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                </div>
-            }
-        </div>
-    </div>
-</div>
-
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

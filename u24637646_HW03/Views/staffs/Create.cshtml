@@ -3,9 +3,7 @@
 @{
     ViewBag.Title = "Create";
 }
-
-<h2>Create Staff Member</h2>
-
+<link href="~/Content/_SharedTheme.css" rel="stylesheet" type="text/css" />
 
 @using (Html.BeginForm())
 {
@@ -18,7 +16,7 @@
 
         @* First Name *@
         <div class="form-group">
-            @Html.Label("First Name", htmlAttributes: new { @class = "control-label col-md-2" }) @* <-- FIXED: Custom Label *@
+            @Html.Label("First Name", htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
                 @Html.EditorFor(model => model.first_name, new { htmlAttributes = new { @class = "form-control" } })
                 @Html.ValidationMessageFor(model => model.first_name, "", new { @class = "text-danger" })
@@ -27,72 +25,69 @@
 
         @* Last Name *@
         <div class="form-group">
-            @Html.Label("Last Name", htmlAttributes: new { @class = "control-label col-md-2" }) @* <-- FIXED: Custom Label *@
+            @Html.Label("Last Name", htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
                 @Html.EditorFor(model => model.last_name, new { htmlAttributes = new { @class = "form-control" } })
                 @Html.ValidationMessageFor(model => model.last_name, "", new { @class = "text-danger" })
             </div>
         </div>
 
-        @* Email Address *@
+        @* Email *@
         <div class="form-group">
-            @Html.Label("Email Address", htmlAttributes: new { @class = "control-label col-md-2" }) @* <-- FIXED: Custom Label *@
+            @Html.Label("Email Address", htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
                 @Html.EditorFor(model => model.email, new { htmlAttributes = new { @class = "form-control" } })
                 @Html.ValidationMessageFor(model => model.email, "", new { @class = "text-danger" })
             </div>
         </div>
 
-        @* Phone Number *@
+        @* Phone *@
         <div class="form-group">
-            @Html.Label("Phone Number", htmlAttributes: new { @class = "control-label col-md-2" }) @* <-- FIXED: Custom Label *@
+            @Html.Label("Phone Number", htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
                 @Html.EditorFor(model => model.phone, new { htmlAttributes = new { @class = "form-control" } })
                 @Html.ValidationMessageFor(model => model.phone, "", new { @class = "text-danger" })
             </div>
         </div>
 
-        @* Active? (Validation enforced by model annotations) *@
+        @* Active Status *@
         <div class="form-group">
-            @Html.Label("Active?", htmlAttributes: new { @class = "control-label col-md-2" }) @* <-- FIXED: Custom Label *@
+            @Html.Label("Active Status", htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
-                @Html.EditorFor(model => model.active, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.active, "", new { @class = "text-danger" })
+                <div class="checkbox">
+                    @* Use a checkbox for the tinyint 'active' column (0=No, 1=Yes) *@
+                    @Html.EditorFor(model => model.active, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.active, "", new { @class = "text-danger" })
+                </div>
             </div>
         </div>
 
         @* Store Name Dropdown *@
         <div class="form-group">
-            @* Note: The second parameter 'store_id' in LabelFor is not needed when using a custom label *@
-            @Html.Label("Store Name", htmlAttributes: new { @class = "control-label col-md-2" }) @* <-- FIXED: Custom Label *@
+            @Html.Label("Store Name", htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
-                @Html.DropDownList("store_id", null, htmlAttributes: new { @class = "form-control" })
+                @Html.DropDownList("store_id", null, "--- Select Store ---", htmlAttributes: new { @class = "form-control" })
                 @Html.ValidationMessageFor(model => model.store_id, "", new { @class = "text-danger" })
             </div>
         </div>
 
         @* Manager Name Dropdown *@
         <div class="form-group">
-            @* Note: The second parameter 'manager_id' in LabelFor is not needed when using a custom label *@
-            @Html.Label("Manager Name", htmlAttributes: new { @class = "control-label col-md-2" }) @* <-- FIXED: Custom Label *@
+            @Html.Label("Manager Name", htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
-                @Html.DropDownList("manager_id", null, htmlAttributes: new { @class = "form-control" })
+                @Html.DropDownList("manager_id", null, "--- No Manager ---", htmlAttributes: new { @class = "form-control" })
                 @Html.ValidationMessageFor(model => model.manager_id, "", new { @class = "text-danger" })
             </div>
         </div>
 
         <div class="form-group">
             <div class="col-md-offset-2 col-md-10">
-                <input type="submit" value="Create" class="btn btn-default" />
+                <input type="button" value="Back" class="btn btn-primary" onclick="history.back()" />
+                <input type="submit" value="Create" class="btn btn-primary" />
             </div>
         </div>
     </div>
-}
 
-<div>
-    @Html.ActionLink("Back to List", "Index")
-</div>
 
-@section Scripts {
-    @Scripts.Render("~/bundles/jqueryval")
+
 }

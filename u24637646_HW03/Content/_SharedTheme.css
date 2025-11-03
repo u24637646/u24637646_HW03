@@ -1,0 +1,507 @@
+﻿/*
+    =========================================================
+      SHARED THEME (TEAL MINIMALIST)
+      Combines: _HomeStyles.css, _DataStyleSheet.css, _ReportingStyles.css
+      Author: Optimized by ChatGPT
+      Theme: Soft Light Gray + Teal Professional
+    =========================================================
+*/
+
+/* ===============================
+   ROOT THEME VARIABLES
+   =============================== */
+:root {
+    --color-primary: #009688;
+    --color-primary-hover: #26a69a;
+    --color-danger: #dc3545;
+    --color-danger-hover: #c82333;
+    --color-background: #f9fafb;
+    --color-card-bg: #ffffff;
+    --color-border: #e5e7eb;
+    --color-shadow: rgba(0, 0, 0, 0.06);
+    --color-text-dark: #222;
+    --color-text-muted: #666;
+    --color-success-bg: #e7f8f4;
+    --color-success-text: #00695c;
+    --font-base: "Inter", "Segoe UI", Roboto, sans-serif;
+}
+
+/* ===============================
+   BASE LAYOUT
+   =============================== */
+body {
+    font-family: var(--font-base);
+    background-color: var(--color-background);
+    color: var(--color-text-dark);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+.container, .dashboard-container {
+    padding: 30px;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: var(--color-text-muted);
+}
+
+/* Headings */
+h1, h2, h3, h4 {
+    color: var(--color-text-dark);
+    font-weight: 600;
+    margin-bottom: 25px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* ===============================
+   CARD & PANEL COMPONENTS
+   =============================== */
+.card, .info-card, .panel {
+    background-color: var(--color-card-bg);
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 4px 15px var(--color-shadow);
+    padding: 25px;
+    margin-bottom: 25px;
+    transition: box-shadow 0.2s ease;
+    height:auto;
+}
+
+    .card:hover, .info-card:hover, .panel:hover {
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    }
+
+.card-header, .panel-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #f0f0f0;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+}
+
+.card-title, .panel-title, .info-card h3 {
+    font-size: 1.4em;
+    font-weight: 600;
+    color: var(--color-primary);
+
+}
+
+/* ===============================
+   DASHBOARD GRID LAYOUT
+   =============================== */
+.grid-layout, .dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+}
+
+@media (max-width: 992px) {
+    .grid-layout, .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===============================
+   DATA TABLES
+   =============================== */
+.table {
+    background-color: var(--color-card-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 3px 10px var(--color-shadow);
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+}
+
+    .table th {
+        background-color: var(--color-primary);
+        color: #fff;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 12px 15px;
+        font-size: 0.85em;
+        border: none;
+    }
+
+    .table td {
+        border-top: 1px solid var(--color-border);
+        padding: 12px 15px;
+        vertical-align: middle;
+        font-size: 0.95em;
+    }
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: var(--color-background);
+}
+
+.table-hover tbody tr:hover {
+    background-color: #eef3f2;
+}
+
+.table td a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+    .table td a:hover {
+        text-decoration: underline;
+    }
+
+.product-filter-container{
+    margin-bottom: 20px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+/* ===============================
+   FORMS
+   =============================== */
+.form-horizontal, .form-container {
+    background-color: var(--color-card-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px var(--color-shadow);
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.control-label {
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: 5px;
+    display: inline-block;
+}
+
+.form-control {
+    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    padding: 10px 12px;
+    width: 100%;
+    font-size: 1em;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control-select {
+    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    padding: 10px 12px;
+    width: 45%;
+    font-size: 1em;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+    .form-control:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 0.2rem rgba(0, 150, 136, 0.25);
+        outline: none;
+    }
+
+/* ===============================
+   BUTTONS
+   =============================== */
+.btn {
+    display: inline-block;
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+}
+
+/* Primary Button */
+.btn-primary, .btn-home {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+    .btn-primary:hover, .btn-home:hover {
+        background-color: var(--color-primary-hover);
+        box-shadow: 0 2px 8px rgba(0, 150, 136, 0.3);
+    }
+
+/* Secondary Button */
+.btn-secondary, .btn-default {
+    background-color: #e9ecef;
+    color: var(--color-text-dark);
+    border-color: #ced4da;
+}
+
+    .btn-secondary:hover, .btn-default:hover {
+        background-color: #d6d9dc;
+    }
+
+/* Danger Button */
+.btn-danger {
+    background-color: var(--color-danger);
+    border-color: var(--color-danger);
+    color: #fff;
+}
+
+    .btn-danger:hover {
+        background-color: var(--color-danger-hover);
+    }
+
+/* ===============================
+   ALERTS & NOTICES
+   =============================== */
+.alert {
+    border-radius: 6px;
+    padding: 15px 20px;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+
+.alert-success {
+    background-color: var(--color-success-bg);
+    color: var(--color-success-text);
+    border: 1px solid #b7e5dc;
+}
+
+/* ===============================
+   MODALS
+   =============================== */
+.modal-content {
+    border-radius: 6px;
+    border: none;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    background-color: var(--color-background);
+    color: var(--color-text-dark);
+    border-bottom: 1px solid var(--color-border);
+    padding: 15px 20px;
+}
+
+    .modal-header h4 {
+        font-weight: 600;
+        margin: 0;
+    }
+
+.modal-footer {
+    background-color: #f0f2f5;
+    border-top: 1px solid var(--color-border);
+    padding: 15px 20px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+/* ===============================
+   UTILITIES
+   =============================== */
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.mb-3 {
+    margin-bottom: 1rem;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
+.mt-3 {
+    margin-top: 1rem;
+}
+
+.p-2 {
+    padding: 0.5rem;
+}
+
+.p-3 {
+    padding: 1rem;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.flex-column {
+    flex-direction: column;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}
+
+.text-end {
+    text-align: right;
+}
+
+/* ===============================
+   RESPONSIVENESS
+   =============================== */
+@media (max-width: 768px) {
+    .dashboard-container, .container {
+        padding: 20px;
+    }
+
+    .card, .form-container {
+        padding: 20px;
+    }
+
+    h1, h2, h3 {
+        font-size: 1.2em;
+    }
+
+    .btn {
+        width: 100%;
+    }
+}
+
+/* ===============================
+   FOOTERS (Panels, Modals, Cards)
+   =============================== */
+
+/* General Panel Footer */
+.panel-footer, .card-footer {
+    background-color: var(--color-background);
+    border-top: 1px solid var(--color-border);
+    padding: 15px 20px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+/* Panel Navigator Footer (for search + actions) */
+.panel-navigator {
+    background-color: var(--color-card-bg);
+    padding: 20px;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0 0 8px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.04);
+}
+
+    .panel-navigator .search-group {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        max-width: 300px;
+        margin: 0 auto;
+    }
+
+    .panel-navigator .btn-group {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
+
+/* Modal Footer */
+.modal-footer {
+    background-color: var(--color-card-bg);
+    border-top: 1px solid var(--color-border);
+    padding: 15px 25px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+/* ===============================
+   BUTTON STYLING
+   =============================== */
+
+.btn,
+.btn-primary,
+.btn-home,
+.btn-outline,
+.btn-secondary {
+    border-radius: 0.75rem !important; /* slightly more rounded */
+    padding: 8px 16px;
+    font-weight: 500;
+    transition: all 0.25s ease;
+}
+
+    /* Default button hover effect */
+    .btn:hover,
+    .btn-primary:hover,
+    .btn-home:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+    }
+
+/* Primary Teal Button */
+.btn-primary {
+    background-color: var(--color-primary);
+    border: none;
+    color: #fff;
+}
+
+    .btn-primary:hover {
+        background-color: #009688;
+    }
+
+/* Outline Button */
+.btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--color-primary);
+    color: var(--color-primary);
+}
+
+    .btn-outline:hover {
+        background-color: var(--color-primary-light);
+        color: #fff;
+    }
+
+/* Home Action Button */
+.btn-home {
+    background-color: #e0f2f1;
+    color: #00695c;
+    border: 1px solid #b2dfdb;
+}
+
+    .btn-home:hover {
+        background-color: #b2dfdb;
+    }
+
+/* Footer Button Spacing */
+.modal-footer .btn,
+.panel-footer .btn,
+.panel-navigator .btn {
+    min-width: 110px;
+}
+
+/* Align footer buttons better on mobile */
+@media (max-width: 768px) {
+    .modal-footer, .panel-footer, .panel-navigator {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+        .modal-footer .btn,
+        .panel-footer .btn,
+        .panel-navigator .btn {
+            width: 100%;
+        }
+}
+
+/* Optional hover enhancement for footer zones */
+.panel-footer:hover,
+.modal-footer:hover {
+    background-color: #f5f9f9;
+    transition: background-color 0.2s ease;
+}

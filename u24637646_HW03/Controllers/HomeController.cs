@@ -10,9 +10,6 @@ using System.IO;
 using System.Text;
 using Newtonsoft.Json;
 
-// NOTE: Ensure your ViewModels (StaffViewModel, CustomerViewModel, ProductViewModel, MaintainViewModel)
-// and Models (BikeStoresEntities, staffs, customers, products, etc.) are correctly defined in your project.
-
 namespace u24637646_HW03.Controllers
 {
     public class HomeController : Controller
@@ -20,76 +17,75 @@ namespace u24637646_HW03.Controllers
         private BikeStoresEntities db = new BikeStoresEntities();
         private const string ArchiveFolder = "~/ArchivedReports/";
 
-        // Helper function to load reports from the physical directory (Keep as is)
+        // Helper method to load reports from the file system and sync with metadata
         private List<ArchivedReport> LoadArchivedReports(string serverPath)
         {
-            // ... (LoadArchivedReports content as before) ...
             var archivedList = new List<ArchivedReport>();
 
             if (Directory.Exists(serverPath))
             {
-                // Get all PDF files in the directory
+                // Get all PDF files in the archive directory
                 var pdfFiles = Directory.EnumerateFiles(serverPath, "*.pdf");
 
                 foreach (var filePath in pdfFiles)
                 {
                     string filename = Path.GetFileName(filePath);
+
+                    // 🚨 FIX: Explicitly use System.IO.File to resolve the conflict
                     DateTime lastModified = System.IO.File.GetLastWriteTime(filePath);
 
-                    // Try to find existing metadata
+                    // Check if we have existing metadata for this file
                     var existingMetadata = ReportArchive.Reports
-            .FirstOrDefault(r => r.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase));
+                        .FirstOrDefault(r => r.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase));
 
-                    // Use existing metadata or create a default
+                    // Use existing metadata or create default entry
                     var report = existingMetadata ?? new ArchivedReport
                     {
                         Filename = filename,
                         Filetype = "PDF",
                         DateSaved = lastModified,
                         ChartType = filename.Contains("Monthly_Order_Trend") ? "Monthly Order Trend" :
-            (filename.Contains("Sales_Revenue_Distribution") ? "Sales Revenue Distribution" : "Custom Chart"),
+                                   (filename.Contains("Sales_Revenue_Distribution") ? "Sales Revenue Distribution" : "Custom Chart"),
                         Description = $"Chart saved on {lastModified:yyyy-MM-dd HH:mm}"
                     };
 
-                    // CRITICAL: Ensure the DateSaved reflects the file's date if no metadata exists
+                    // Update date saved if no metadata exists
                     if (existingMetadata == null)
                     {
                         report.DateSaved = lastModified;
-                        // Add newly discovered file's metadata to the static list for future reference
                         ReportArchive.Reports.Add(report);
                     }
 
                     archivedList.Add(report);
                 }
 
-                // CRITICAL: Clean up metadata for files that no longer exist
+                // Clean up metadata for files that no longer exist
                 var filesInDir = new HashSet<string>(pdfFiles.Select(Path.GetFileName), StringComparer.OrdinalIgnoreCase);
                 ReportArchive.Reports.RemoveAll(r => !filesInDir.Contains(r.Filename));
             }
 
-            // Return only the files that currently exist, ordered by date
+            // Return files ordered by most recent first
             return archivedList.OrderByDescending(r => r.DateSaved).ToList();
         }
 
-        // --- REPORTS ACTION (Keep as is) ---
+        // Display the reports dashboard with charts and archives
         public async Task<ActionResult> Reports()
         {
-            // ... (Reports content as before) ...
             var jsonSetting = new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore };
 
-            // 1. Doughnut Chart Data Preparation (Sales by Store)
+            // Prepare doughnut chart data showing sales by store
             var rawStoreSales = await db.order_items
-        .Include(oi => oi.orders.stores)
-        .Where(oi => oi.orders != null && oi.orders.stores != null)
-        .Select(oi => new
-        {
-            Store = oi.orders.stores.store_name,
-            oi.list_price,
-            oi.quantity,
-            oi.discount
-        })
-        .Where(raw => raw.Store != null)
-        .ToListAsync();
+                .Include(oi => oi.orders.stores)
+                .Where(oi => oi.orders != null && oi.orders.stores != null)
+                .Select(oi => new
+                {
+                    Store = oi.orders.stores.store_name,
+                    oi.list_price,
+                    oi.quantity,
+                    oi.discount
+                })
+                .Where(raw => raw.Store != null)
+                .ToListAsync();
 
             var storeSales = rawStoreSales
                 .GroupBy(raw => raw.Store)
@@ -104,18 +100,17 @@ namespace u24637646_HW03.Controllers
             ViewBag.DoughnutLabels = JsonConvert.SerializeObject(storeSales.Select(c => c.Store).ToList(), jsonSetting);
             ViewBag.DoughnutData = JsonConvert.SerializeObject(storeSales.Select(c => c.TotalSales).ToList(), jsonSetting);
 
-
-            // 2. Line Chart Data Preparation (Monthly Order Trend)
+            // Prepare line chart data showing monthly order trends
             var rawMonthlyOrders = await db.orders
-        .GroupBy(o => new { o.order_date.Year, o.order_date.Month })
-        .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
-        .Select(g => new
-        {
-            Year = g.Key.Year,
-            Month = g.Key.Month,
-            OrderCount = g.Count()
-        })
-        .ToListAsync();
+                .GroupBy(o => new { o.order_date.Year, o.order_date.Month })
+                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+                .Select(g => new
+                {
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    OrderCount = g.Count()
+                })
+                .ToListAsync();
 
             var monthlyOrders = rawMonthlyOrders
                 .Select(item => new
@@ -128,27 +123,24 @@ namespace u24637646_HW03.Controllers
             ViewBag.LineLabels = JsonConvert.SerializeObject(monthlyOrders.Select(m => m.OrderDate.ToString("MMM yyyy")).ToList(), jsonSetting);
             ViewBag.LineData = JsonConvert.SerializeObject(monthlyOrders.Select(m => m.OrderCount).ToList(), jsonSetting);
 
-            // FIX: Load reports directly from the file system and update metadata
+            // Load archived reports from disk
             string serverPath = Server.MapPath(ArchiveFolder);
-            ViewBag.ArchivedReports = LoadArchivedReports(serverPath); // Uses the helper to sync file system with metadata
+            ViewBag.ArchivedReports = LoadArchivedReports(serverPath);
 
             return View();
         }
 
-        // --- EXISTING INDEX ACTION (Keep as is) ---
+        // Display the main dashboard with staff, customers, and products
         public async Task<ActionResult> Index(string selectedBrand, string selectedCategory)
         {
-            // --- 1. HANDLE MAINTENANCE MESSAGES ---
-            // If the user was redirected from an Edit or Delete operation (using standard TempData keys)
+            // Display any messages from redirects (edit/delete operations)
             if (TempData["Message"] != null)
             {
                 ViewBag.Message = TempData["Message"].ToString();
                 ViewBag.MessageClass = TempData["MessageClass"]?.ToString() ?? "alert-info";
             }
-            // TempData["SuccessMessage"] is handled directly in the view (for Create)
 
-
-            // --- 2. PRODUCT FILTERING LOGIC ---
+            // Build product query with optional filtering
             IQueryable<products> productsQuery = db.products;
 
             if (!string.IsNullOrEmpty(selectedBrand) && selectedBrand != "All Brands")
@@ -161,17 +153,15 @@ namespace u24637646_HW03.Controllers
                 productsQuery = productsQuery.Where(p => p.categories.category_name == selectedCategory);
             }
 
-            // Get all unique brands/categories for filter dropdowns (before main query execution)
+            // Populate filter dropdowns
             ViewData["AllBrands"] = await db.brands.Select(b => b.brand_name).Distinct().OrderBy(n => n).ToListAsync();
             ViewData["AllCategories"] = await db.categories.Select(c => c.category_name).Distinct().OrderBy(n => n).ToListAsync();
             ViewData["SelectedBrand"] = selectedBrand;
             ViewData["SelectedCategory"] = selectedCategory;
 
-
-            // --- 3. FETCH DATA (STAFF, CUSTOMER, PRODUCT) ---
             var viewModel = new HomeIndexViewModel();
 
-            // Fetch Products (with filtering applied)
+            // Fetch and prepare product data
             var productList = await productsQuery
                 .Select(p => new ProductViewModel
                 {
@@ -186,15 +176,14 @@ namespace u24637646_HW03.Controllers
                 .OrderBy(p => p.product_id)
                 .ToListAsync();
 
-            // Assign ListIndex to Products
+            // Assign list indices for navigation
             for (int i = 0; i < productList.Count; i++)
             {
                 productList[i].ListIndex = i + 1;
             }
             viewModel.ProductsList = productList;
 
-
-            // Fetch Staff
+            // Fetch and prepare staff data
             var staffList = await db.staffs
                 .Include(s => s.stores).Include(s => s.staffs2)
                 .Select(s => new StaffViewModel
@@ -211,17 +200,16 @@ namespace u24637646_HW03.Controllers
                 .OrderBy(s => s.staff_id)
                 .ToListAsync();
 
-            // Assign ListIndex to Staff
             for (int i = 0; i < staffList.Count; i++)
             {
                 staffList[i].ListIndex = i + 1;
             }
             viewModel.StaffsList = staffList;
 
-            // Fetch Staff Sales (Used for Staff panel details)
+            // Fetch staff sales history for display
+            // FIX for CS0472 (redundant null check removed)
             viewModel.StaffSalesList = await db.order_items
                 .Include(oi => oi.orders).Include(oi => oi.products)
-                .Where(oi => oi.orders.staff_id != null)
                 .OrderByDescending(oi => oi.orders.order_date)
                 .Select(oi => new StaffSaleViewModel
                 {
@@ -230,8 +218,7 @@ namespace u24637646_HW03.Controllers
                 })
                 .ToListAsync();
 
-
-            // Fetch Customers
+            // Fetch and prepare customer data
             var customerList = await db.customers
                 .Select(c => new CustomerViewModel
                 {
@@ -248,17 +235,16 @@ namespace u24637646_HW03.Controllers
                 .OrderBy(c => c.customer_id)
                 .ToListAsync();
 
-            // Assign ListIndex to Customers
             for (int i = 0; i < customerList.Count; i++)
             {
                 customerList[i].ListIndex = i + 1;
             }
             viewModel.CustomersList = customerList;
 
-            // Fetch Customer Purchases (Used for Customer panel details)
+            // Fetch customer purchase history
+            // FIX for CS0472 (redundant null check removed)
             viewModel.CustomerPurchasesList = await db.order_items
                 .Include(oi => oi.orders).Include(oi => oi.products)
-                .Where(oi => oi.orders.customer_id != null)
                 .OrderByDescending(oi => oi.orders.order_date)
                 .Select(oi => new CustomerPurchaseViewModel
                 {
@@ -271,38 +257,40 @@ namespace u24637646_HW03.Controllers
             return View(viewModel);
         }
 
-        // --- ARCHIVE ACTIONS (Keep as is) ---
+        // Save a chart report as PDF to the archive
         [HttpPost]
-        [ValidateInput(false)] // REQUIRED to accept HTML content from TinyMCE
+        [ValidateInput(false)] // Allow HTML content from TinyMCE
         public ActionResult SaveChartReport(ReportSubmissionModel model)
         {
-            // ... (SaveChartReport content as before) ...
-            // Enhanced validation and logging
+            // Validate required fields
             if (string.IsNullOrWhiteSpace(model.PdfBase64Data))
             {
-                TempData["Message"] = "Error: PDF data is missing. Please try generating the chart again.";
+                TempData["Message"] = "Error: PDF data is missing. Please regenerate the chart and try again.";
+                TempData["MessageClass"] = "alert-danger";
                 return RedirectToAction("Reports");
             }
 
             if (string.IsNullOrWhiteSpace(model.Filename))
             {
-                TempData["Message"] = "Error: Filename is missing. Please provide a valid filename.";
+                TempData["Message"] = "Error: Filename is required. Please provide a valid filename.";
+                TempData["MessageClass"] = "alert-danger";
                 return RedirectToAction("Reports");
             }
 
             if (string.IsNullOrWhiteSpace(model.ChartName))
             {
                 TempData["Message"] = "Error: Chart name is missing.";
+                TempData["MessageClass"] = "alert-danger";
                 return RedirectToAction("Reports");
             }
 
             try
             {
-                // 1. Clean and sanitize filename
+                // Sanitize filename by removing invalid characters
                 string baseFilename = Path.GetInvalidFileNameChars()
-            .Aggregate(model.Filename, (current, c) => current.Replace(c.ToString(), "_"));
+                    .Aggregate(model.Filename, (current, c) => current.Replace(c.ToString(), "_"));
 
-                // Remove any existing .pdf extension to avoid duplication
+                // Remove existing .pdf extension to avoid duplication
                 if (baseFilename.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
                 {
                     baseFilename = baseFilename.Substring(0, baseFilename.Length - 4);
@@ -314,46 +302,46 @@ namespace u24637646_HW03.Controllers
                 string serverPath = Server.MapPath(ArchiveFolder);
                 string fullPath = Path.Combine(serverPath, fullFilename);
 
-                // 2. Ensure the Archive directory exists
+                // Ensure archive directory exists
                 if (!Directory.Exists(serverPath))
                 {
                     Directory.CreateDirectory(serverPath);
                 }
 
-                // 3. Clean Base64 string (remove any whitespace or data URI prefix)
+                // Clean Base64 string (remove data URI prefix and whitespace)
                 string cleanBase64 = model.PdfBase64Data
-            .Replace("data:application/pdf;base64,", "")
-            .Replace("\r", "")
-            .Replace("\n", "")
-            .Replace(" ", "");
+                    .Replace("data:application/pdf;base64,", "")
+                    .Replace("\r", "")
+                    .Replace("\n", "")
+                    .Replace(" ", "");
 
-                // Validate Base64 string
+                // Validate Base64 format
                 if (cleanBase64.Length % 4 != 0)
                 {
                     TempData["Message"] = "Error: Invalid PDF data format. Please try again.";
+                    TempData["MessageClass"] = "alert-danger";
                     return RedirectToAction("Reports");
                 }
 
-                // 4. Convert Base64 string to PDF bytes and save
+                // Convert Base64 to bytes and save
                 byte[] pdfBytes = Convert.FromBase64String(cleanBase64);
 
-                // Validate that we have actual data
                 if (pdfBytes.Length == 0)
                 {
-                    TempData["Message"] = "Error: PDF data is empty. Please try generating the chart again.";
+                    TempData["Message"] = "Error: PDF data is empty. Please regenerate the chart.";
+                    TempData["MessageClass"] = "alert-danger";
                     return RedirectToAction("Reports");
                 }
 
-                // Write the file
                 System.IO.File.WriteAllBytes(fullPath, pdfBytes);
 
-                // 5. Update Report Metadata
+                // Update or create report metadata
                 var existingReport = ReportArchive.Reports
-            .FirstOrDefault(r => r.Filename.Equals(fullFilename, StringComparison.OrdinalIgnoreCase));
+                    .FirstOrDefault(r => r.Filename.Equals(fullFilename, StringComparison.OrdinalIgnoreCase));
 
                 if (existingReport != null)
                 {
-                    // Update existing entry (in case of overwrite)
+                    // Update existing metadata
                     existingReport.DateSaved = DateTime.Now;
                     existingReport.Description = string.IsNullOrWhiteSpace(model.Description)
                         ? $"**{model.ChartName}** chart saved on {DateTime.Now:yyyy-MM-dd HH:mm}"
@@ -362,7 +350,7 @@ namespace u24637646_HW03.Controllers
                 }
                 else
                 {
-                    // Add new report metadata
+                    // Create new metadata entry
                     var newReport = new ArchivedReport
                     {
                         Filename = fullFilename,
@@ -370,87 +358,87 @@ namespace u24637646_HW03.Controllers
                         ChartType = model.ChartName,
                         DateSaved = DateTime.Now,
                         Description = string.IsNullOrWhiteSpace(model.Description)
-                ? $"**{model.ChartName}** chart saved on {DateTime.Now:yyyy-MM-dd HH:mm}"
-                : model.Description
+                            ? $"**{model.ChartName}** chart saved on {DateTime.Now:yyyy-MM-dd HH:mm}"
+                            : model.Description
                     };
                     ReportArchive.Reports.Add(newReport);
                 }
 
-                TempData["Message"] = $"✓ Chart Report '{fullFilename}' successfully archived! ({pdfBytes.Length:N0} bytes)";
+                TempData["Message"] = $"✓ Chart report '{fullFilename}' successfully archived! ({pdfBytes.Length:N0} bytes)";
+                TempData["MessageClass"] = "alert-success";
             }
             catch (FormatException ex)
             {
                 TempData["Message"] = $"Error: Invalid PDF data format. {ex.Message}";
+                TempData["MessageClass"] = "alert-danger";
             }
             catch (Exception ex)
             {
                 TempData["Message"] = $"Error saving report: {ex.Message}";
+                TempData["MessageClass"] = "alert-danger";
             }
 
             return RedirectToAction("Reports");
         }
 
-        // Action to handle updating the description via the modal (Rich Text Box)
+        // Update report description via modal
         [HttpPost]
-        [ValidateInput(false)] // REQUIRED to accept HTML content from TinyMCE
+        [ValidateInput(false)] // Allow HTML content from TinyMCE
         public ActionResult UpdateReportDescription(string filename, string Description)
         {
-            // ... (UpdateReportDescription content as before) ...
-            var reportToUpdate = ReportArchive.Reports.FirstOrDefault(r => r.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase));
+            var reportToUpdate = ReportArchive.Reports
+                .FirstOrDefault(r => r.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase));
 
             if (reportToUpdate != null)
             {
                 reportToUpdate.Description = Description;
                 TempData["Message"] = $"Description for '{filename}' updated successfully.";
+                TempData["MessageClass"] = "alert-success";
             }
             else
             {
-                TempData["Message"] = $"Error: Report '{filename}' not found for update.";
+                TempData["Message"] = $"Error: Report '{filename}' not found.";
+                TempData["MessageClass"] = "alert-danger";
             }
 
             return RedirectToAction("Reports");
         }
 
-        /// <summary>
-        /// Action to handle downloading an archived report (PDF expected).
-        /// </summary>
+        // Download an archived report
         public FileResult DownloadReport(string filename, string filetype)
         {
-            // ... (DownloadReport content as before) ...
-            string fullFilename = Path.GetFileName(filename); // Ensure we only get the filename
+            string fullFilename = Path.GetFileName(filename);
             string fullPath = Path.Combine(Server.MapPath(ArchiveFolder), fullFilename);
 
             if (!filetype.Equals("PDF", StringComparison.OrdinalIgnoreCase))
             {
-                return File(Encoding.UTF8.GetBytes("File type not supported for download."), "text/plain", "Error.txt");
+                // Returning a FileResult with a text file containing the error
+                return base.File(Encoding.UTF8.GetBytes("File type not supported for download."), "text/plain", "Error.txt");
             }
 
             if (System.IO.File.Exists(fullPath))
             {
-                // Serve the physical PDF file
-                string contentType = "application/pdf";
-                return File(fullPath, contentType, fullFilename);
+                // Returning a FileResult with the actual file
+                return base.File(fullPath, "application/pdf", fullFilename);
             }
             else
             {
-                // Handle case where metadata exists but the file is missing
                 string errorContent = $"Error: PDF file '{fullFilename}' not found on the server at path: {fullPath}";
-                return File(Encoding.UTF8.GetBytes(errorContent), "text/plain", "Download_Error.txt");
+                // Returning a FileResult with a text file containing the error
+                return base.File(Encoding.UTF8.GetBytes(errorContent), "text/plain", "Download_Error.txt");
             }
         }
 
-        /// <summary>
-        /// Action to handle deleting a report (metadata and physical file).
-        /// </summary>
+        // Delete a report (both file and metadata)
         [HttpPost]
         public ActionResult DeleteReport(string filename)
         {
-            // ... (DeleteReport content as before) ...
-            var reportToDelete = ReportArchive.Reports.FirstOrDefault(r => r.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase));
+            var reportToDelete = ReportArchive.Reports
+                .FirstOrDefault(r => r.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase));
             string fullPath = Path.Combine(Server.MapPath(ArchiveFolder), filename);
             bool fileDeleted = false;
 
-            // 1. Delete Physical File
+            // Delete physical file
             if (System.IO.File.Exists(fullPath))
             {
                 try
@@ -460,39 +448,36 @@ namespace u24637646_HW03.Controllers
                 }
                 catch (Exception ex)
                 {
-                    // Log or report error, but proceed to delete metadata
-                    TempData["Message"] = $"Warning: Metadata deletion pending. Could not delete physical file '{filename}'. Error: {ex.Message}";
+                    TempData["Message"] = $"Warning: Could not delete physical file '{filename}'. Error: {ex.Message}";
+                    TempData["MessageClass"] = "alert-warning";
                 }
             }
 
-            // 2. Delete Metadata
+            // Delete metadata
             if (reportToDelete != null)
             {
                 ReportArchive.Reports.Remove(reportToDelete);
-                TempData["Message"] = $"Report '{filename}' deleted successfully from archive and server.";
+                TempData["Message"] = $"Report '{filename}' deleted successfully.";
+                TempData["MessageClass"] = "alert-success";
             }
             else if (fileDeleted)
             {
-                TempData["Message"] = $"Report '{filename}' file deleted successfully, but metadata was not found.";
+                TempData["Message"] = $"Report '{filename}' file deleted, but metadata was not found.";
+                TempData["MessageClass"] = "alert-warning";
             }
             else
             {
-                TempData["Message"] = $"Error: Report '{filename}' not found for deletion.";
+                TempData["Message"] = $"Error: Report '{filename}' not found.";
+                TempData["MessageClass"] = "alert-danger";
             }
 
             return RedirectToAction("Reports");
         }
 
-        // =========================================================
-        // 🚀 NEW MAINTAIN ACTION AND ASYNC CRUD METHODS
-        // =========================================================
-
-        /// <summary>
-        /// Loads all Staff, Customers, and Products for the Maintain screen.
-        /// </summary>
+        // Load the maintenance screen with all entities
         public async Task<ActionResult> Maintain()
         {
-            // Staff Query (including IDs for Update/Delete)
+            // Fetch staff with related data for editing
             var staffQuery = db.staffs.Include(s => s.stores).Include(s => s.staffs2)
                 .Select(s => new StaffViewModel
                 {
@@ -502,13 +487,13 @@ namespace u24637646_HW03.Controllers
                     email = s.email,
                     phone = s.phone,
                     active = s.active,
-                    store_id = s.store_id, // For Update
-                    manager_id = s.manager_id, // For Update
-                    store_name = s.stores.store_name, // For Display
-                    manager_name = s.manager_id == null ? "No Manager" : s.staffs2.first_name + " " + s.staffs2.last_name // For Display
+                    store_id = s.store_id,
+                    manager_id = s.manager_id,
+                    store_name = s.stores.store_name,
+                    manager_name = s.manager_id == null ? "No Manager" : s.staffs2.first_name + " " + s.staffs2.last_name
                 });
 
-            // Customers Query
+            // Fetch customers
             var customersQuery = db.customers.Select(c => new CustomerViewModel
             {
                 customer_id = c.customer_id,
@@ -522,18 +507,18 @@ namespace u24637646_HW03.Controllers
                 zip_code = c.zip_code
             });
 
-            // Products Query
+            // Fetch products with related data
             var productsQuery = db.products.Select(p => new ProductViewModel
             {
                 product_id = p.product_id,
                 product_name = p.product_name,
                 model_year = p.model_year,
                 list_price = p.list_price,
-                brand_id = p.brand_id, // For Update
-                category_id = p.category_id, // For Update
-                brand_name = p.brands.brand_name, // For Display
-                category_name = p.categories.category_name, // For Display
-                TotalStock = p.stocks.Sum(st => (int?)st.quantity) ?? 0 // Total stock from all stores
+                brand_id = p.brand_id,
+                category_id = p.category_id,
+                brand_name = p.brands.brand_name,
+                category_name = p.categories.category_name,
+                TotalStock = p.stocks.Sum(st => (int?)st.quantity) ?? 0
             });
 
             var viewModel = new MaintainViewModel
@@ -543,9 +528,8 @@ namespace u24637646_HW03.Controllers
                 ProductsList = await productsQuery.ToListAsync()
             };
 
-            // Additionally, pass dropdown data for the modals (Used in the View via AJAX)
+            // Populate dropdown data for modals
             ViewBag.Stores = new SelectList(await db.stores.ToListAsync(), "store_id", "store_name");
-            // Exclude the staff member being edited from the potential managers list in real scenario, but here we include all staff
             ViewBag.StaffManagers = new SelectList(await db.staffs.OrderBy(s => s.last_name).ToListAsync(), "staff_id", "last_name");
             ViewBag.Brands = new SelectList(await db.brands.ToListAsync(), "brand_id", "brand_name");
             ViewBag.Categories = new SelectList(await db.categories.ToListAsync(), "category_id", "category_name");
@@ -553,11 +537,9 @@ namespace u24637646_HW03.Controllers
             return View(viewModel);
         }
 
-        // ---------------------------------------------------------
         // STAFF CRUD OPERATIONS
-        // ---------------------------------------------------------
 
-        // EDIT (Get data for modal)
+        // Get staff data for editing
         [HttpGet]
         public async Task<JsonResult> EditStaff(int id)
         {
@@ -568,7 +550,6 @@ namespace u24637646_HW03.Controllers
                 return Json(new { success = false, message = "Staff member not found." }, JsonRequestBehavior.AllowGet);
             }
 
-            // Return the staff model object with FKs for the edit modal
             var staffModel = new StaffViewModel
             {
                 staff_id = staff.staff_id,
@@ -584,7 +565,7 @@ namespace u24637646_HW03.Controllers
             return Json(new { success = true, staff = staffModel }, JsonRequestBehavior.AllowGet);
         }
 
-        // UPDATE (Post data from modal)
+        // Update staff member
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<JsonResult> UpdateStaff(StaffViewModel model)
@@ -598,7 +579,7 @@ namespace u24637646_HW03.Controllers
                     return Json(new { success = false, message = "Staff member not found." });
                 }
 
-                // Update properties from ViewModel to Entity model
+                // Update properties
                 staff.first_name = model.first_name;
                 staff.last_name = model.last_name;
                 staff.email = model.email;
@@ -612,7 +593,8 @@ namespace u24637646_HW03.Controllers
                 try
                 {
                     await db.SaveChangesAsync();
-                    // Return the fully rendered/updated view model data for list refresh
+
+                    // Return updated data for UI refresh
                     var updatedStaff = await db.staffs
                         .Include(s => s.stores).Include(s => s.staffs2)
                         .Where(s => s.staff_id == model.staff_id)
@@ -629,7 +611,8 @@ namespace u24637646_HW03.Controllers
                         })
                         .FirstOrDefaultAsync();
 
-                    return Json(new { success = true, message = $"Staff '{model.first_name} {model.last_name}' updated successfully.", data = updatedStaff });
+                    // ADDED REDIRECT URL
+                    return Json(new { success = true, message = $"Staff '{model.first_name} {model.last_name}' updated successfully.", data = updatedStaff, redirectUrl = Url.Action("Maintain", "Home") });
                 }
                 catch (Exception ex)
                 {
@@ -641,7 +624,7 @@ namespace u24637646_HW03.Controllers
             return Json(new { success = false, message = "Validation failed.", errors = errors });
         }
 
-        // DELETE (Post data from modal)
+        // Delete staff member
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<JsonResult> DeleteStaff(int id)
@@ -654,17 +637,18 @@ namespace u24637646_HW03.Controllers
                     return Json(new { success = false, message = "Staff member not found." });
                 }
 
-                // CRITICAL: Check for dependent records (e.g., orders assigned to this staff)
+                // Check for dependent records
                 var ordersCount = await db.orders.CountAsync(o => o.staff_id == id);
                 if (ordersCount > 0)
                 {
-                    return Json(new { success = false, message = $"Deletion failed. Staff member has {ordersCount} related orders and cannot be deleted." });
+                    return Json(new { success = false, message = $"Cannot delete. This staff member has {ordersCount} related orders." });
                 }
 
                 db.staffs.Remove(staff);
                 await db.SaveChangesAsync();
 
-                return Json(new { success = true, message = $"Staff member ID {id} deleted successfully." });
+                // ADDED REDIRECT URL
+                return Json(new { success = true, message = $"Staff member ID {id} deleted successfully.", redirectUrl = Url.Action("Maintain", "Home") });
             }
             catch (Exception ex)
             {
@@ -672,11 +656,9 @@ namespace u24637646_HW03.Controllers
             }
         }
 
-        // ---------------------------------------------------------
         // CUSTOMER CRUD OPERATIONS
-        // ---------------------------------------------------------
 
-        // EDIT (Get data for modal)
+        // Get customer data for editing
         [HttpGet]
         public async Task<JsonResult> EditCustomer(int id)
         {
@@ -703,7 +685,7 @@ namespace u24637646_HW03.Controllers
             return Json(new { success = true, customer = customerModel }, JsonRequestBehavior.AllowGet);
         }
 
-        // UPDATE (Post data from modal)
+        // Update customer
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<JsonResult> UpdateCustomer(CustomerViewModel model)
@@ -733,7 +715,6 @@ namespace u24637646_HW03.Controllers
                 {
                     await db.SaveChangesAsync();
 
-                    // Return the updated view model data
                     var updatedCustomer = new CustomerViewModel
                     {
                         customer_id = customer.customer_id,
@@ -747,7 +728,8 @@ namespace u24637646_HW03.Controllers
                         zip_code = customer.zip_code
                     };
 
-                    return Json(new { success = true, message = $"Customer '{model.first_name} {model.last_name}' updated successfully.", data = updatedCustomer });
+                    // ADDED REDIRECT URL
+                    return Json(new { success = true, message = $"Customer '{model.first_name} {model.last_name}' updated successfully.", data = updatedCustomer, redirectUrl = Url.Action("Maintain", "Home") });
                 }
                 catch (Exception ex)
                 {
@@ -759,7 +741,7 @@ namespace u24637646_HW03.Controllers
             return Json(new { success = false, message = "Validation failed.", errors = errors });
         }
 
-        // DELETE (Post data from modal)
+        // Delete customer
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<JsonResult> DeleteCustomer(int id)
@@ -772,17 +754,18 @@ namespace u24637646_HW03.Controllers
                     return Json(new { success = false, message = "Customer not found." });
                 }
 
-                // CRITICAL: Check for dependent records (e.g., orders placed by this customer)
+                // Check for dependent orders
                 var ordersCount = await db.orders.CountAsync(o => o.customer_id == id);
                 if (ordersCount > 0)
                 {
-                    return Json(new { success = false, message = $"Deletion failed. Customer has {ordersCount} related orders and cannot be deleted." });
+                    return Json(new { success = false, message = $"Cannot delete. Customer has {ordersCount} related orders." });
                 }
 
                 db.customers.Remove(customer);
                 await db.SaveChangesAsync();
 
-                return Json(new { success = true, message = $"Customer ID {id} deleted successfully." });
+                // ADDED REDIRECT URL
+                return Json(new { success = true, message = $"Customer ID {id} deleted successfully.", redirectUrl = Url.Action("Maintain", "Home") });
             }
             catch (Exception ex)
             {
@@ -790,11 +773,9 @@ namespace u24637646_HW03.Controllers
             }
         }
 
-        // ---------------------------------------------------------
         // PRODUCT CRUD OPERATIONS
-        // ---------------------------------------------------------
 
-        // EDIT (Get data for modal)
+        // Get product data for editing
         [HttpGet]
         public async Task<JsonResult> EditProduct(int id)
         {
@@ -818,7 +799,7 @@ namespace u24637646_HW03.Controllers
             return Json(new { success = true, product = productModel }, JsonRequestBehavior.AllowGet);
         }
 
-        // UPDATE (Post data from modal)
+        // Update product
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<JsonResult> UpdateProduct(ProductViewModel model)
@@ -845,7 +826,7 @@ namespace u24637646_HW03.Controllers
                 {
                     await db.SaveChangesAsync();
 
-                    // Return the updated view model data (with display names/stock)
+                    // Return updated data for UI refresh
                     var updatedProduct = await db.products
                         .Include(p => p.brands).Include(p => p.categories).Include(p => p.stocks)
                         .Where(p => p.product_id == model.product_id)
@@ -861,7 +842,8 @@ namespace u24637646_HW03.Controllers
                         })
                         .FirstOrDefaultAsync();
 
-                    return Json(new { success = true, message = $"Product '{model.product_name}' updated successfully.", data = updatedProduct });
+                    // ADDED REDIRECT URL
+                    return Json(new { success = true, message = $"Product '{model.product_name}' updated successfully.", data = updatedProduct, redirectUrl = Url.Action("Maintain", "Home") });
                 }
                 catch (Exception ex)
                 {
@@ -873,7 +855,7 @@ namespace u24637646_HW03.Controllers
             return Json(new { success = false, message = "Validation failed.", errors = errors });
         }
 
-        // DELETE (Post data from modal)
+        // NEWLY ADDED: Delete product
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<JsonResult> DeleteProduct(int id)
@@ -886,36 +868,30 @@ namespace u24637646_HW03.Controllers
                     return Json(new { success = false, message = "Product not found." });
                 }
 
-                // CRITICAL: Check for dependent records (e.g., product in order_items or stock)
+                // Check for dependent records (order_items)
                 var orderItemsCount = await db.order_items.CountAsync(oi => oi.product_id == id);
                 if (orderItemsCount > 0)
                 {
-                    return Json(new { success = false, message = $"Deletion failed. Product is included in {orderItemsCount} orders and cannot be deleted." });
+                    return Json(new { success = false, message = $"Cannot delete. This product has {orderItemsCount} related order items." });
                 }
 
-                // Delete related stock records first if you want to allow deletion
+                // Handle related 'stocks' records (assuming they must be deleted first)
                 var stocks = await db.stocks.Where(s => s.product_id == id).ToListAsync();
-                db.stocks.RemoveRange(stocks);
-                await db.SaveChangesAsync(); // Save changes for stocks before deleting the product itself
+                if (stocks.Any())
+                {
+                    db.stocks.RemoveRange(stocks);
+                }
 
                 db.products.Remove(product);
                 await db.SaveChangesAsync();
 
-                return Json(new { success = true, message = $"Product ID {id} deleted successfully." });
+                // ADDED REDIRECT URL
+                return Json(new { success = true, message = $"Product ID {id} deleted successfully.", redirectUrl = Url.Action("Maintain", "Home") });
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = $"Deletion failed: {ex.Message}" });
             }
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                db.Dispose();
-            }
-            base.Dispose(disposing);
         }
     }
 }

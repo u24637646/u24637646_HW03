@@ -1,8 +1,7 @@
 ﻿@model u24637646_HW03.Models.products
-
-<h3>Are you sure you want to delete this?</h3>
+<link href="~/Content/_SharedTheme.css" rel="stylesheet" type="text/css" />
 <div>
-    <h4>products</h4>
+    <h4>Are you sure you want to delete this product ?</h4>
     <hr />
     <dl class="dl-horizontal">
         <dt>
@@ -11,6 +10,24 @@
 
         <dd>
             @Html.DisplayFor(model => model.product_name)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.brand_id)
+        </dt>
+
+        <dd>
+            @* Note: Displays only the ID here. The full Delete page shows the name via ViewModel. *@
+            @Html.DisplayFor(model => model.brand_id)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.category_id)
+        </dt>
+
+        <dd>
+            @* Note: Displays only the ID here. The full Delete page shows the name via ViewModel. *@
+            @Html.DisplayFor(model => model.category_id)
         </dd>
 
         <dt>
@@ -28,31 +45,15 @@
         <dd>
             @Html.DisplayFor(model => model.list_price)
         </dd>
-
-        <dt>
-            @Html.DisplayNameFor(model => model.brands.brand_name)
-        </dt>
-
-        <dd>
-            @Html.DisplayFor(model => model.brands.brand_name)
-        </dd>
-
-        <dt>
-            @Html.DisplayNameFor(model => model.categories.category_name)
-        </dt>
-
-        <dd>
-            @Html.DisplayFor(model => model.categories.category_name)
-        </dd>
-
     </dl>
 
-    @using (Html.BeginForm()) {
+    @using (Html.BeginForm("DeleteConfirmed", "products", FormMethod.Post, new { id = "deleteCustomerForm" }))
+    {
         @Html.AntiForgeryToken()
-
-        <div class="form-actions no-color">
-            <input type="submit" value="Delete" class="btn btn-default" /> |
-            @Html.ActionLink("Back to List", "Index")
-        </div>
+        @Html.HiddenFor(model => model.product_id)
+<div class="form-actions no-color">
+    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+    <input type="submit" value="Delete" class="btn btn-default" />
+</div>
     }
 </div>
