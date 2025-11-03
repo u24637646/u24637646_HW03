@@ -42,14 +42,46 @@ namespace u24637646_HW03.Controllers
             return View(customerList);
         }
 
-        // Load create form in modal
+        // Action for a full-page GET request to edit a customer (kept for completeness)
+        public async Task<ActionResult> Edit(int? id)
+        {
+            if (id == null) return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+
+            customers customers = await db.customers.FindAsync(id);
+            if (customers == null) return HttpNotFound();
+
+            return View(customers);
+        }
+
+        // Action for a full-page POST request to save an edited customer (Standard Edit)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> Edit([Bind(Include = "customer_id,first_name,last_name,phone,email,street,city,state,zip_code")] customers customers)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    db.Entry(customers).State = EntityState.Modified;
+                    await db.SaveChangesAsync();
+                    return RedirectToAction("Index");
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", "Unable to save changes. Try again, and if the problem persists, see your system administrator. Details: " + ex.Message);
+                }
+            }
+            return View(customers);
+        }
+
+        // Load create form in modal (AJAX GET)
         [HttpGet]
         public ActionResult CreatePartial()
         {
             return PartialView("_CreatePartial", new customers());
         }
 
-        // Handle customer creation via AJAX (Added try-catch for error handling)
+        // Handle customer creation via AJAX (AJAX POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> CreatePartial(customers customer)
@@ -61,58 +93,24 @@ namespace u24637646_HW03.Controllers
                     db.customers.Add(customer);
                     await db.SaveChangesAsync();
 
-                    TempData["SuccessMessage"] = $"Customer **{customer.first_name} {customer.last_name}** created successfully!";
+                    TempData["SuccessMessage"] = $"Customer {customer.first_name} {customer.last_name} created successfully!";
 
-                    return Json(new { success = true, redirectUrl = Url.Action("Maintain", "Home") });
+                    // Success: Return JSON indicating redirection is needed
+                    return Json(new { success = true, redirectUrl = Url.Action("Index", "Home") });
                 }
                 catch (Exception ex)
                 {
-                    // Return failure JSON response with error details
                     Response.StatusCode = 200;
                     return Json(new { success = false, message = "Unable to create customer. Database error: " + ex.Message });
                 }
             }
 
-            // If validation fails, return the form with errors
+            // Failure: Return the partial view content with validation errors
             Response.StatusCode = 200;
             return PartialView("_CreatePartial", customer);
         }
 
-        // Action for a full-page GET request to edit a customer
-        public async Task<ActionResult> Edit(int? id)
-        {
-            if (id == null) return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
-
-            customers customers = await db.customers.FindAsync(id);
-            if (customers == null) return HttpNotFound();
-
-            return View(customers);
-        }
-
-        // Action for a full-page POST request to save an edited customer (Standard Edit - Added try-catch)
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Edit([Bind(Include = "customer_id,first_name,last_name,phone,email,street,city,state,zip_code")] customers customers)
-        {
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    db.Entry(customers).State = EntityState.Modified;
-                    await db.SaveChangesAsync();
-                    return RedirectToAction("Index"); // Redirect to the Index page on success
-                }
-                catch (Exception ex)
-                {
-                    // Add a model error to display on the view via ValidationSummary
-                    ModelState.AddModelError("", "Unable to save changes. Try again, and if the problem persists, see your system administrator. Details: " + ex.Message);
-                }
-            }
-            // If ModelState is invalid or catch block hit, return the view with errors
-            return View(customers);
-        }
-
-        // Load edit form in modal
+        // Load edit form in modal (AJAX GET)
         public async Task<ActionResult> EditPartial(int? id)
         {
             if (id == null) return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
@@ -123,10 +121,10 @@ namespace u24637646_HW03.Controllers
             return PartialView("_EditPartial", customers);
         }
 
-        // Handle customer update via AJAX (Renamed to EditPartialPost and added try-catch)
+        // Handle customer update via AJAX (AJAX POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [ActionName("EditPartialPost")] // Using a distinct name to avoid conflict with standard Edit POST
+        [ActionName("EditPartialPost")]
         public async Task<ActionResult> EditPartialPost([Bind(Include = "customer_id,first_name,last_name,phone,email,street,city,state,zip_code")] customers customers)
         {
             if (ModelState.IsValid)
@@ -136,24 +134,25 @@ namespace u24637646_HW03.Controllers
                     db.Entry(customers).State = EntityState.Modified;
                     await db.SaveChangesAsync();
 
-                    TempData["SuccessMessage"] = $"Customer **{customers.first_name} {customers.last_name}** updated successfully!";
+                    TempData["SuccessMessage"] = $"Customer {customers.first_name} {customers.last_name} updated successfully!";
 
+                    // Success: Return JSON indicating redirection is needed
                     return Json(new { success = true, redirectUrl = Url.Action("Maintain", "Home") });
                 }
                 catch (Exception ex)
                 {
-                    // Return a failure JSON response with the error
+                    // Failure: Return a failure JSON response with the error
                     Response.StatusCode = 200;
                     return Json(new { success = false, message = "Unable to save changes. Database error: " + ex.Message });
                 }
             }
 
-            // If validation fails, return the form with errors
+            // Failure: Return the partial view content with validation errors
             Response.StatusCode = 200;
             return PartialView("_EditPartial", customers);
         }
 
-        // Handle customer deletion via AJAX (Enhanced error handling)
+        // Handle customer deletion via AJAX
         [HttpPost]
         public async Task<ActionResult> DeleteConfirmed(int id)
         {
@@ -169,16 +168,39 @@ namespace u24637646_HW03.Controllers
 
                 TempData["SuccessMessage"] = $"Customer **{customerName}** deleted successfully!";
 
+                // Success: Return JSON indicating redirection is needed
                 return Json(new { success = true, redirectUrl = Url.Action("Maintain", "Home") });
             }
             catch (Exception ex)
             {
-                // This handles Foreign Key constraint issues
+                // Failure: Return JSON with the error message
                 return Json(new { success = false, message = $"Deletion failed. This customer may have related data (e.g., orders) that must be deleted first. Details: {ex.Message}" });
             }
         }
 
-        // Display detailed customer information
+        // ******************** Standard (Non-AJAX) Actions ********************
+        public ActionResult Create() { return View(); }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> Create([Bind(Include = "customer_id,first_name,last_name,phone,email,street,city,state,zip_code")] customers customers)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    db.customers.Add(customers);
+                    await db.SaveChangesAsync();
+                    return RedirectToAction("Index");
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", "Unable to create customer. Try again, and if the problem persists, see your system administrator. Details: " + ex.Message);
+                }
+            }
+            return View(customers);
+        }
+
         public async Task<ActionResult> Details(int? id)
         {
             if (id == null) return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
@@ -202,34 +224,6 @@ namespace u24637646_HW03.Controllers
             return View(customerVM);
         }
 
-        // Standard create form (non-AJAX)
-        public ActionResult Create()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Create([Bind(Include = "customer_id,first_name,last_name,phone,email,street,city,state,zip_code")] customers customers)
-        {
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    db.customers.Add(customers);
-                    await db.SaveChangesAsync();
-                    return RedirectToAction("Index");
-                }
-                catch (Exception ex)
-                {
-                    // Add a model error to display on the view via ValidationSummary
-                    ModelState.AddModelError("", "Unable to create customer. Try again, and if the problem persists, see your system administrator. Details: " + ex.Message);
-                }
-            }
-            return View(customers);
-        }
-
-        // Standard delete confirmation page (non-AJAX)
         public async Task<ActionResult> Delete(int? id)
         {
             if (id == null) return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
@@ -268,7 +262,6 @@ namespace u24637646_HW03.Controllers
             }
             catch (Exception ex)
             {
-                // If deletion fails, reload the Delete page with an error.
                 TempData["ErrorMessage"] = $"Deletion failed. This customer may have related data (e.g., orders) that must be deleted first. Details: {ex.Message}";
                 return RedirectToAction("Delete", new { id = id });
             }

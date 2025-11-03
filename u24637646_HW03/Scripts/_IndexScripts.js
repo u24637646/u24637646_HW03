@@ -18,12 +18,12 @@ function updateDetailsLink(type, dbId) {
 }
 
 // ------------------------------------------------------------------
-// Carousel Navigation Function (FIXED for Backward Wrapping)
+// Carousel Navigation Function (Panel Change Logic Only)
 // ------------------------------------------------------------------
 function navigate(type, direction) {
     var indexInput = $('#' + type + '-index');
     var currentIdx = parseInt(indexInput.val());
-    // CRITICAL FIX: Get total count from the hidden element, which is correctly rendered in Razor
+    // Get total count from the hidden element
     var totalCount = parseInt($('#' + type + '-count').val());
     var lastIndex = totalCount - 1;
 
@@ -50,87 +50,18 @@ function navigate(type, direction) {
         // Ensure the ID attribute is correct (e.g., data-staff-id)
         var dbId = $newItem.data(type + '-id');
 
-        // Update placeholder and clear input
-        $('#' + type + '-id-jump').attr('placeholder', dbId);
-        $('#' + type + '-id-jump').val('');
+        // REMOVED: Counter update logic is no longer needed.
 
         // Update the ActionLink
         updateDetailsLink(type, dbId);
     });
 
+    // Update the hidden index input for the next navigation call
     indexInput.val(newIdx);
 }
 
 // ------------------------------------------------------------------
-// Jump to Specific ID Function (FIXED for Placeholder Usage and Map check)
-// ------------------------------------------------------------------
-function jumpToId(type) {
-    var $input = $('#' + type + '-id-jump');
-    var inputId = $input.val();
-    var idToJump;
-
-    // --- 1. Determine the ID to jump to ---
-    // ... (logic remains correct)
-    if (inputId === null || inputId.trim() === '') {
-        var currentPlaceholder = $input.attr('placeholder');
-
-        if (currentPlaceholder && /^\d+$/.test(currentPlaceholder)) {
-            idToJump = parseInt(currentPlaceholder);
-        } else {
-            alert("Please enter a valid ID number.");
-            $input.val('');
-            return;
-        }
-    } else {
-        if (!/^\d+$/.test(inputId)) {
-            alert("Please enter a valid ID number.");
-            $input.val('');
-            return;
-        }
-        idToJump = parseInt(inputId);
-    }
-
-    // --- 2. Perform Lookup and Validation ---
-    if (typeof entityIdMap == 'undefined' || !entityIdMap[type]) {
-        console.error("entityIdMap or the map for type '" + type + "' is not initialized.");
-        alert("Navigation map is not ready. Please refresh the page.");
-        $input.val('');
-        return;
-    }
-
-    var newIdx = entityIdMap[type][idToJump];
-
-    if (newIdx !== undefined) {
-        var indexInput = $('#' + type + '-index');
-        var currentIdx = parseInt(indexInput.val());
-
-        if (newIdx === currentIdx) {
-            $input.val('');
-            return;
-        }
-
-        // --- 3. Animation and Index Update ---
-        $('#' + type + '-' + currentIdx).fadeOut(100, function () {
-            var $newItem = $('#' + type + '-' + newIdx);
-            $newItem.fadeIn(200);
-
-            var dbId = $newItem.data(type + '-id');
-
-            $input.attr('placeholder', dbId);
-            $input.val('');
-
-            updateDetailsLink(type, dbId);
-        });
-
-        indexInput.val(newIdx);
-    } else {
-        alert(type.charAt(0).toUpperCase() + type.slice(1) + " ID " + idToJump + " not found in the current list.");
-        $input.val('');
-    }
-}
-
-// ------------------------------------------------------------------
-// Document Ready - Initialization and Modal Logic (FIXED)
+// Document Ready - Initialization and Modal Logic
 // ------------------------------------------------------------------
 $(document).ready(function () {
 
@@ -140,18 +71,23 @@ $(document).ready(function () {
         if ($currentModal.length) {
             $currentModal.modal('hide');
         }
-    }); // <-- CRITICAL: This was the main closure error in the original file.
+    });
 
     // --- Initialization of Panels ---
-    // Initialize all three panels: set initial placeholder and details link
+    // Initialize all three panels: set initial details link
     ['staff', 'customer', 'product'].forEach(function (type) {
         var initialItem = $('#' + type + '-0');
+        var totalCount = parseInt($('#' + type + '-count').val() || '0');
+
+        if (totalCount === 0) {
+            return;
+        }
 
         if (initialItem.length > 0) {
             var initialId = initialItem.data(type + '-id');
 
             if (initialId) {
-                $('#' + type + '-id-jump').attr('placeholder', initialId);
+                // REMOVED: Counter initialization is no longer needed.
                 updateDetailsLink(type, initialId);
             }
         }
@@ -191,7 +127,6 @@ $(document).ready(function () {
                     $('#createStaffModal').modal('hide');
                     window.location.href = result.redirectUrl;
                 } else {
-                    // CRITICAL: Load returned partial view (with validation errors) on failure
                     if (result.html) {
                         $('#staffModalBody').html(result.html);
                         $.validator.unobtrusive.parse('#staffModalBody');
@@ -245,7 +180,6 @@ $(document).ready(function () {
                     $('#createCustomerModal').modal('hide');
                     window.location.href = result.redirectUrl;
                 } else {
-                    // CRITICAL: Load returned partial view (with validation errors) on failure
                     if (result.html) {
                         $('#customerModalBody').html(result.html);
                         $.validator.unobtrusive.parse('#customerModalBody');
@@ -270,3 +204,112 @@ $(document).ready(function () {
         $('#customerModalBody').empty();
     });
 });
+
+// Function to handle the AJAX form submission and modal management
+var modalManagement = function () {
+
+    // 1. Handlers for loading partial views into the modal
+    $('.modal-link').click(function (e) {
+        e.preventDefault();
+        var url = $(this).attr('href');
+
+        // Load the partial view into the modal body
+        $('#modalBodyContent').load(url, function () {
+            // Re-parse validation rules (crucial for partial views)
+            $.validator.unobtrusive.parse('#modalBodyContent');
+
+            // Show the modal
+            $('#myModal').modal('show');
+
+            // Check if it's a Create/Edit form being loaded
+            var formId = $('#modalBodyContent').find('form').attr('id');
+            if (formId) {
+                // Attach submit handler to the form once it's loaded
+                attachFormSubmitHandler(formId);
+            }
+        });
+    });
+
+    // 2. Core function to attach the AJAX submit handler to forms
+    function attachFormSubmitHandler(formId) {
+        var formElement = $('#' + formId);
+
+        // Remove previous handler to prevent multiple executions
+        formElement.off('submit.ajaxForm').on('submit.ajaxForm', function (e) {
+            e.preventDefault();
+
+            // Ensure client-side validation passes
+            if (!formElement.valid()) {
+                return;
+            }
+
+            var url = formElement.attr('action');
+            var formData = formElement.serialize();
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: formData,
+                success: function (response) {
+                    if (response.success) {
+                        // Success: Hide modal and redirect (or refresh)
+                        $('#myModal').modal('hide');
+                        // Redirect to 'Maintain' page which will show TempData message
+                        window.location.href = response.redirectUrl || '@Url.Action("Maintain", "Home")';
+                    } else if (response.message) {
+                        // Handle server-side errors that return JSON
+                        alert('Error: ' + response.message);
+                    } else {
+                        // Validation failed (server returns PartialView with errors)
+                        $('#modalBodyContent').html(response);
+                        // Re-parse validation rules for the updated content
+                        $.validator.unobtrusive.parse('#modalBodyContent');
+                        // Re-attach the submit handler to the new form content
+                        attachFormSubmitHandler(formId);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('An unexpected error occurred: ' + xhr.responseText);
+                }
+            });
+        });
+    }
+
+    // 3. Delete confirmation handler (if implemented via modal)
+    $('.delete-link').click(function (e) {
+        e.preventDefault();
+        var deleteUrl = $(this).data('delete-url');
+        var recordId = $(this).data('record-id');
+        var recordName = $(this).data('record-name');
+        var controller = $(this).data('controller');
+
+        if (confirm('Are you sure you want to delete ' + recordName + ' (ID: ' + recordId + ')?')) {
+            $.ajax({
+                url: deleteUrl,
+                type: 'POST',
+                data: { id: recordId, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
+                success: function (response) {
+                    if (response.success) {
+                        // Success: Redirect to 'Maintain' page
+                        window.location.href = response.redirectUrl || '@Url.Action("Maintain", "Home")';
+                    } else {
+                        // Failure: Show error message
+                        alert('Deletion failed: ' + response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('An unexpected error occurred during deletion.');
+                }
+            });
+        }
+    });
+
+    // Handle modal closing: clean up content
+    $('#myModal').on('hidden.bs.modal', function () {
+        $('#modalBodyContent').empty();
+        $('#modalFooterContent').empty();
+    });
+};
+
+// Run the modal management logic when the document is ready
+$(document).ready(modalManagement);
